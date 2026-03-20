@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Game – Das Hooksches Gesetz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e17;
+    --surface: #1a1926;
+    --surface2: #221f35;
+    --accent: #e8a838;
+    --accent2: #7c6af5;
+    --red: #e05c5c;
+    --green: #5dbea3;
+    --text: #e8e6f0;
+    --muted: #8b89a0;
+    --border: rgba(255,255,255,0.08);
+    --glow: rgba(232, 168, 56, 0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1,h2,h3,.label,.btn,.tag { font-family: 'Syne', sans-serif; }
+
+  /* ── SCREEN SYSTEM ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── INTRO ── */
+  #intro {
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, #2b1f5e 0%, var(--bg) 60%);
+    text-align: center; padding: 2rem;
+  }
+  .intro-badge {
+    display: inline-block; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 0.3rem 1rem; font-size: 0.75rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 2rem;
+    font-family: 'Syne', sans-serif;
+  }
+  #intro h1 { font-size: clamp(2rem, 6vw, 4rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; }
+  #intro h1 span { color: var(--accent); }
+  #intro p { max-width: 520px; color: var(--muted); line-height: 1.7; margin-bottom: 2.5rem; font-size: 1.05rem; }
+  .spring-deco {
+    width: 60px; height: 80px; margin: 0 auto 2rem;
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .coil {
+    width: 50px; height: 8px; border: 2px solid var(--accent);
+    border-radius: 50%; margin: -2px 0; opacity: 0.7;
+  }
+
+  /* ── NAV BAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    flex-shrink: 0;
+  }
+  .topbar .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem; color: var(--accent); letter-spacing: 0.05em; }
+  .progress-bar-wrap { flex: 1; max-width: 260px; margin: 0 1.5rem; }
+  .progress-bar-bg { height: 4px; background: var(--border); border-radius: 2px; }
+  .progress-bar-fill { height: 4px; background: var(--accent); border-radius: 2px; transition: width 0.5s ease; }
+  .step-label { font-family: 'Syne', sans-serif; font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+  .lives { display: flex; gap: 6px; }
+  .heart { font-size: 1.1rem; transition: opacity 0.3s; }
+  .heart.lost { opacity: 0.15; }
+
+  /* ── STAGE LAYOUT ── */
+  .stage-wrap { flex: 1; padding: 2rem 1.5rem; max-width: 760px; width: 100%; margin: 0 auto; }
+  .stage-header { margin-bottom: 1.5rem; }
+  .stage-tag {
+    display: inline-block; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.2rem 0.6rem; font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent2); margin-bottom: 0.75rem;
+    font-family: 'Syne', sans-serif;
+  }
+  .stage-header h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }
+  .stage-header p { color: var(--muted); margin-top: 0.5rem; line-height: 1.6; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card.highlight { border-color: rgba(232,168,56,0.3); background: linear-gradient(135deg, var(--surface) 0%, #1e1a30 100%); }
+  .formula-box {
+    background: var(--bg); border: 1px solid rgba(124,106,245,0.4);
+    border-radius: 12px; padding: 1rem 1.5rem;
+    text-align: center; margin: 1rem 0;
+    font-size: 1.6rem; font-family: 'Syne', sans-serif; color: var(--accent2);
+    letter-spacing: 0.05em;
+  }
+  .formula-box small { display: block; font-size: 0.75rem; color: var(--muted); font-family: 'Source Serif 4', serif; margin-top: 0.25rem; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.75rem 1.75rem; border-radius: 10px; border: none;
+    font-size: 0.9rem; font-weight: 700; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    text-decoration: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--accent); color: #0f0e17;
+    box-shadow: 0 0 20px rgba(232,168,56,0.25);
+  }
+  .btn-primary:hover { box-shadow: 0 0 30px rgba(232,168,56,0.45); }
+  .btn-ghost {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface2); }
+  .btn-full { width: 100%; }
+
+  /* ── MC OPTIONS ── */
+  .mc-option {
+    display: flex; align-items: flex-start; gap: 1rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 0.6rem; text-align: left;
+  }
+  .mc-option:hover { border-color: rgba(124,106,245,0.5); background: rgba(124,106,245,0.06); }
+  .mc-option.selected { border-color: var(--accent2); background: rgba(124,106,245,0.12); }
+  .mc-option.correct { border-color: var(--green); background: rgba(93,190,163,0.1); }
+  .mc-option.wrong { border-color: var(--red); background: rgba(224,92,92,0.1); }
+  .mc-option .opt-letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700;
+    flex-shrink: 0; color: var(--muted);
+  }
+  .mc-option.selected .opt-letter { background: var(--accent2); color: #fff; border-color: transparent; }
+  .mc-option.correct .opt-letter { background: var(--green); color: #fff; border-color: transparent; }
+  .mc-option.wrong .opt-letter { background: var(--red); color: #fff; border-color: transparent; }
+  .mc-option p { line-height: 1.5; font-size: 0.95rem; }
+
+  /* ── INPUT ── */
+  .calc-input {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.8rem 1rem;
+    color: var(--text); font-size: 1rem; font-family: 'Syne', sans-serif;
+    width: 100%; transition: border-color 0.2s;
+    outline: none;
+  }
+  .calc-input:focus { border-color: var(--accent2); }
+  .calc-input.correct { border-color: var(--green); }
+  .calc-input.wrong { border-color: var(--red); }
+  .input-group { display: flex; gap: 0.75rem; align-items: center; margin-top: 0.75rem; }
+  .unit-tag {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.8rem 0.9rem;
+    font-family: 'Syne', sans-serif; font-size: 0.85rem; color: var(--muted);
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── SPRING SIMULATION ── */
+  .sim-container {
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .sim-canvas-wrap {
+    flex: 0 0 220px; display: flex; flex-direction: column; align-items: center;
+  }
+  .sim-controls { flex: 1; min-width: 200px; }
+  canvas#springCanvas {
+    display: block; border-radius: 12px;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .slider-row { margin-bottom: 1rem; }
+  .slider-row label { font-family: 'Syne', sans-serif; font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+    box-shadow: 0 0 8px rgba(232,168,56,0.4);
+  }
+  .sim-readout {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem; margin-top: 1rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  }
+  .readout-item { text-align: center; }
+  .readout-item .val { font-family: 'Syne', sans-serif; font-size: 1.3rem; color: var(--accent); font-weight: 700; }
+  .readout-item .lbl { font-size: 0.7rem; color: var(--muted); font-family: 'Syne', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* ── FEEDBACK ── */
+  .feedback-box {
+    border-radius: 10px; padding: 1rem 1.25rem;
+    margin-top: 1rem; display: none;
+    font-size: 0.9rem; line-height: 1.5;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-box.success { background: rgba(93,190,163,0.1); border: 1px solid rgba(93,190,163,0.3); color: var(--green); }
+  .feedback-box.error { background: rgba(224,92,92,0.1); border: 1px solid rgba(224,92,92,0.3); color: var(--red); }
+  .feedback-box .fb-icon { font-size: 1.2rem; margin-right: 0.5rem; }
+
+  /* ── CODE LOCK ── */
+  .code-digits { display: flex; gap: 0.75rem; justify-content: center; margin: 1.5rem 0; }
+  .digit-input {
+    width: 56px; height: 72px; text-align: center;
+    background: var(--bg); border: 2px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+    outline: none; transition: border-color 0.2s;
+  }
+  .digit-input:focus { border-color: var(--accent2); }
+  .digit-input.correct-d { border-color: var(--green); color: var(--green); }
+  .digit-input.wrong-d { border-color: var(--red); color: var(--red); animation: shake 0.4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .lock-icon { font-size: 3rem; text-align: center; margin: 1rem 0; transition: transform 0.4s; }
+  .lock-icon.open { transform: rotate(-15deg); }
+
+  /* ── INFO GRID ── */
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+  .info-tile {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem;
+  }
+  .info-tile .ti-label { font-family: 'Syne', sans-serif; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent2); margin-bottom: 0.3rem; }
+  .info-tile .ti-val { font-size: 0.95rem; color: var(--text); }
+
+  /* ── SUCCESS SCREEN ── */
+  #success {
+    align-items: center; justify-content: center;
+    text-align: center; padding: 2rem;
+    background: radial-gradient(ellipse at 50% 0%, #1a3520 0%, var(--bg) 60%);
+  }
+  .success-icon { font-size: 4rem; margin-bottom: 1rem; }
+  #success h1 { font-size: 2.5rem; color: var(--green); margin-bottom: 0.75rem; }
+  #success p { color: var(--muted); max-width: 480px; line-height: 1.7; margin-bottom: 2rem; }
+  .score-display {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.5rem 2.5rem;
+    margin: 1.5rem auto; display: inline-block;
+  }
+  .score-display .score-num { font-family: 'Syne', sans-serif; font-size: 3.5rem; font-weight: 800; color: var(--accent); line-height: 1; }
+  .score-display .score-lbl { font-family: 'Syne', sans-serif; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.25rem; }
+
+  /* ── LOSE SCREEN ── */
+  #gameover {
+    align-items: center; justify-content: center;
+    text-align: center; padding: 2rem;
+    background: radial-gradient(ellipse at 50% 0%, #2a1010 0%, var(--bg) 60%);
+  }
+  #gameover h1 { font-size: 2.5rem; color: var(--red); margin-bottom: 0.75rem; }
+  #gameover p { color: var(--muted); max-width: 480px; line-height: 1.7; margin-bottom: 2rem; }
+
+  /* ── STAGE TRANSITIONS ── */
+  .stage-wrap { animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── TOOLTIP ── */
+  .hint-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 0.35rem 0.75rem;
+    font-size: 0.75rem; font-family: 'Syne', sans-serif; cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .hint-btn:hover { background: var(--surface2); color: var(--text); }
+  .hint-text { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.85rem; color: var(--muted); line-height: 1.5; display: none; }
+  .hint-text.show { display: block; }
+
+  /* responsive */
+  @media (max-width: 500px) {
+    .sim-container { flex-direction: column; }
+    .sim-canvas-wrap { flex: none; width: 100%; }
+    .code-digits { gap: 0.5rem; }
+    .digit-input { width: 46px; height: 60px; font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ INTRO ═══════════════════════════════════ -->
+<section id="intro" class="screen active">
+  <div class="spring-deco">
+    <div class="coil"></div><div class="coil"></div><div class="coil"></div>
+    <div class="coil"></div><div class="coil"></div><div class="coil"></div>
+    <div style="width:2px;height:24px;background:var(--accent);opacity:0.5;margin-top:2px;"></div>
+  </div>
+  <div class="intro-badge">🔒 Physik Exit-Game</div>
+  <h1>Das <span>Hooksches</span><br>Gesetz</h1>
+  <p>
+    Ein geheimnisvolles Labor ist verriegelt. Nur wer das Hooksches Gesetz wirklich
+    versteht, kann den Tresor knacken und entkommen. Beweise dein Wissen in
+    4 Rätseln – mit maximal 3 Fehlern.
+  </p>
+  <button class="btn btn-primary" onclick="startGame()" style="font-size:1rem; padding: 1rem 2.5rem;">
+    Eintreten →
+  </button>
+</section>
+
+<!-- ═══════════════════════════════════ GAME ═══════════════════════════════════ -->
+<section id="game" class="screen" style="flex-direction: column;">
+  <div class="topbar">
+    <div class="logo">⚙ Hooke-Lab</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="step-label" id="stepLabel">Aufgabe 1 von 4</div>
+    </div>
+    <div class="lives" id="livesDisplay">
+      <span class="heart" id="h1">❤️</span>
+      <span class="heart" id="h2">❤️</span>
+      <span class="heart" id="h3">❤️</span>
+    </div>
+  </div>
+
+  <!-- STAGE 1 – Multiple Choice Theorie -->
+  <div id="stage1" class="stage-wrap" style="display:none">
+    <div class="stage-header">
+      <div class="stage-tag">📖 Raum 1 · Theorie</div>
+      <h2>Was beschreibt das Hooksches Gesetz?</h2>
+      <p>Lies die Formel und wähle die richtige Aussage aus.</p>
+    </div>
+    <div class="formula-box">F = D · x <small>F = Federkraft · D = Federkonstante · x = Dehnung</small></div>
+    <div id="mc1-options"></div>
+    <div class="feedback-box" id="fb1"></div>
+    <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+      <button class="btn btn-ghost hint-btn" onclick="toggleHint('hint1')">💡 Tipp</button>
+    </div>
+    <div class="hint-text" id="hint1">Das Gesetz gilt nur in einem bestimmten Bereich – achte auf das Stichwort „Proportionalität".</div>
+    <div style="margin-top:1.5rem; text-align:right;">
+      <button class="btn btn-primary" id="btn1" onclick="checkMC1()" disabled>Bestätigen →</button>
+    </div>
+  </div>
+
+  <!-- STAGE 2 – Interaktive Simulation -->
+  <div id="stage2" class="stage-wrap" style="display:none">
+    <div class="stage-header">
+      <div class="stage-tag">🔬 Raum 2 · Simulation</div>
+      <h2>Erkunde die Federsimulation</h2>
+      <p>Verstelle Federkonstante und Dehnung. Beantworte dann die Fragen unten.</p>
+    </div>
+    <div class="card">
+      <div class="sim-container">
+        <div class="sim-canvas-wrap">
+          <canvas id="springCanvas" width="200" height="320"></canvas>
+        </div>
+        <div class="sim-controls">
+          <div class="slider-row">
+            <label><span>Federkonstante D</span><span id="dVal">50 N/m</span></label>
+            <input type="range" id="sliderD" min="10" max="200" value="50" oninput="updateSim()">
+          </div>
+          <div class="slider-row">
+            <label><span>Dehnung x</span><span id="xVal">0.10 m</span></label>
+            <input type="range" id="sliderX" min="0" max="30" value="10" oninput="updateSim()">
+          </div>
+          <div class="sim-readout">
+            <div class="readout-item">
+              <div class="val" id="forceVal">5.0 N</div>
+              <div class="lbl">Kraft F</div>
+            </div>
+            <div class="readout-item">
+              <div class="val" id="dValR">50 N/m</div>
+              <div class="lbl">D</div>
+            </div>
+            <div class="readout-item">
+              <div class="val" id="xValR">0.10 m</div>
+              <div class="lbl">Dehnung x</div>
+            </div>
+            <div class="readout-item">
+              <div class="val" id="simCheck">–</div>
+              <div class="lbl">F = D·x?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Sim-Frage: was passiert wenn x verdoppelt wird? -->
+    <div class="card" style="margin-top:1rem;">
+      <p style="margin-bottom:0.75rem; font-weight:600;">Was passiert mit der Kraft <em>F</em>, wenn die Dehnung <em>x</em> verdoppelt wird (bei gleichem D)?</p>
+      <div id="mc2-options"></div>
+    </div>
+    <div class="feedback-box" id="fb2"></div>
+    <div style="margin-top:1.5rem; text-align:right;">
+      <button class="btn btn-primary" id="btn2" onclick="checkMC2()" disabled>Bestätigen →</button>
+    </div>
+  </div>
+
+  <!-- STAGE 3 – Rechenaufgabe -->
+  <div id="stage3" class="stage-wrap" style="display:none">
+    <div class="stage-header">
+      <div class="stage-tag">🧮 Raum 3 · Rechnen</div>
+      <h2>Berechne die Federkonstante</h2>
+      <p>Im Labor hängt an einer Feder eine Masse. Du musst D berechnen.</p>
+    </div>
+    <div class="card highlight">
+      <div class="info-grid">
+        <div class="info-tile">
+          <div class="ti-label">Masse</div>
+          <div class="ti-val">m = 0,4 kg</div>
+        </div>
+        <div class="info-tile">
+          <div class="ti-label">Erdanziehung</div>
+          <div class="ti-val">g = 10 N/kg</div>
+        </div>
+        <div class="info-tile">
+          <div class="ti-label">Dehnung</div>
+          <div class="ti-val">x = 0,08 m</div>
+        </div>
+        <div class="info-tile">
+          <div class="ti-label">Gesucht</div>
+          <div class="ti-val">D = ? N/m</div>
+        </div>
+      </div>
+      <div class="formula-box" style="font-size:1.2rem;">
+        F = m · g &nbsp;|&nbsp; D = F / x
+        <small>Berechne zuerst die Gewichtskraft, dann D</small>
+      </div>
+    </div>
+    <div class="card">
+      <label style="font-family:'Syne',sans-serif; font-size:0.85rem; color:var(--muted); display:block; margin-bottom:0.5rem;">Deine Antwort für D:</label>
+      <div class="input-group">
+        <input type="number" class="calc-input" id="calcInput3" placeholder="z. B. 50">
+        <span class="unit-tag">N/m</span>
+      </div>
+    </div>
+    <div class="feedback-box" id="fb3"></div>
+    <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+      <button class="btn btn-ghost hint-btn" onclick="toggleHint('hint3')">💡 Tipp</button>
+      <button class="btn btn-primary" onclick="checkCalc3()">Prüfen →</button>
+    </div>
+    <div class="hint-text" id="hint3">Schritt 1: F = m · g = 0,4 · 10 = ? N<br>Schritt 2: D = F / x = ? / 0,08</div>
+  </div>
+
+  <!-- STAGE 4 – Code-Schloss -->
+  <div id="stage4" class="stage-wrap" style="display:none">
+    <div class="stage-header">
+      <div class="stage-tag">🔐 Raum 4 · Code-Schloss</div>
+      <h2>Knacke den Tresor</h2>
+      <p>Löse beide Aufgaben. Aus den Ergebnissen ergibt sich der 4-stellige Code.</p>
+    </div>
+    <div class="card">
+      <p style="font-weight:600; margin-bottom:0.5rem;">Aufgabe A – Federkraft berechnen:</p>
+      <div class="info-grid">
+        <div class="info-tile"><div class="ti-label">D</div><div class="ti-val">300 N/m</div></div>
+        <div class="info-tile"><div class="ti-label">x</div><div class="ti-val">0,02 m</div></div>
+      </div>
+      <p style="color:var(--muted); font-size:0.85rem; margin-top:0.5rem;">→ Ergebnis F = <strong style="color:var(--text)">__ N</strong> → die ersten <strong style="color:var(--accent)">zwei</strong> Ziffern</p>
+    </div>
+    <div class="card">
+      <p style="font-weight:600; margin-bottom:0.5rem;">Aufgabe B – Dehnung berechnen:</p>
+      <div class="info-grid">
+        <div class="info-tile"><div class="ti-label">F</div><div class="ti-val">120 N</div></div>
+        <div class="info-tile"><div class="ti-label">D</div><div class="ti-val">800 N/m</div></div>
+      </div>
+      <p style="color:var(--muted); font-size:0.85rem; margin-top:0.5rem;">→ Ergebnis x = <strong style="color:var(--text)">0,__ m</strong> → die letzten <strong style="color:var(--accent)">zwei</strong> Ziffern der Dezimalstellen</p>
+    </div>
+    <div class="lock-icon" id="lockIcon">🔒</div>
+    <div class="code-digits">
+      <input class="digit-input" id="d1" maxlength="1" type="text" inputmode="numeric" oninput="digitInput(this,'d2')" onkeydown="digitBack(event,this,null)">
+      <input class="digit-input" id="d2" maxlength="1" type="text" inputmode="numeric" oninput="digitInput(this,'d3')" onkeydown="digitBack(event,this,'d1')">
+      <input class="digit-input" id="d3" maxlength="1" type="text" inputmode="numeric" oninput="digitInput(this,'d4')" onkeydown="digitBack(event,this,'d2')">
+      <input class="digit-input" id="d4" maxlength="1" type="text" inputmode="numeric" oninput="digitInput(this,null)" onkeydown="digitBack(event,this,'d3')">
+    </div>
+    <div class="feedback-box" id="fb4"></div>
+    <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+      <button class="btn btn-ghost hint-btn" onclick="toggleHint('hint4')">💡 Tipp</button>
+      <button class="btn btn-primary" onclick="checkCode()">Code eingeben →</button>
+    </div>
+    <div class="hint-text" id="hint4">A: F = 300 · 0,02 = ? → zweistellige Zahl als Stellen 1+2<br>B: x = 120 / 800 = 0,__ → z. B. 0,15 → Stellen 3+4 = 1 und 5</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ SUCCESS ═══════════════════════════════════ -->
+<section id="success" class="screen">
+  <div class="success-icon">🎉</div>
+  <h1>Entkommen!</h1>
+  <p>Fantastisch! Du hast alle Rätsel gelöst und den Tresor geknackt. Du beherrschst das Hooksches Gesetz.</p>
+  <div class="score-display">
+    <div class="score-num" id="finalScore">–</div>
+    <div class="score-lbl">Punkte</div>
+  </div>
+  <div style="margin-top:0.5rem; color:var(--muted); font-size:0.9rem;" id="finalMsg"></div>
+  <div style="margin-top:2rem; display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="restartGame()">Nochmal spielen</button>
+    <button class="btn btn-ghost" onclick="showSummary()">Zusammenfassung</button>
+  </div>
+  <div id="summary" style="display:none; max-width:560px; text-align:left; margin-top:2rem;">
+    <div class="card">
+      <h3 style="font-family:'Syne',sans-serif; margin-bottom:1rem; color:var(--accent);">📋 Das Hooksches Gesetz – Zusammenfassung</h3>
+      <p style="margin-bottom:0.75rem;"><strong>Formel:</strong> F = D · x</p>
+      <p style="margin-bottom:0.75rem;"><strong>Bedeutung:</strong> Die Federkraft F ist proportional zur Auslenkung x. Je größer D (steifere Feder), desto größer die Kraft bei gleicher Dehnung.</p>
+      <p style="margin-bottom:0.75rem;"><strong>Gültigkeitsbereich:</strong> Das Gesetz gilt nur bis zur Elastizitätsgrenze. Darüber verformt sich die Feder dauerhaft.</p>
+      <p><strong>Einheiten:</strong> F in Newton [N] · D in N/m · x in Meter [m]</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ GAME OVER ═══════════════════════════════════ -->
+<section id="gameover" class="screen">
+  <div style="font-size:3rem; margin-bottom:1rem;">💥</div>
+  <h1>Leider nicht!</h1>
+  <p>Du hast 3 Fehler gemacht und bist im Labor eingeschlossen. Übe noch einmal das Hooksches Gesetz und versuche es erneut!</p>
+  <button class="btn btn-primary" onclick="restartGame()" style="margin-top:0.5rem;">Nochmal versuchen →</button>
+</section>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+let lives = 3;
+let currentStage = 0;
+let score = 0;
+let mc1Selected = null;
+let mc2Selected = null;
+let stage3Done = false;
+
+// ─── ANSWERS ─────────────────────────────────────────────────────────
+const MC1 = [
+  { text: "Die Federkraft F ist proportional zur Dehnung x – je mehr man dehnt, desto größer die Kraft.", correct: true },
+  { text: "Eine Feder dehnt sich immer gleich weit, egal wie groß die Kraft ist.", correct: false },
+  { text: "Das Gesetz gilt für alle Materialien und jede Dehnung, auch nach dem Reißen.", correct: false },
+  { text: "Die Dehnung hängt nur von der Masse, nicht von der Federkonstante ab.", correct: false },
+];
+const MC2 = [
+  { text: "F bleibt gleich – die Dehnung spielt keine Rolle.", correct: false },
+  { text: "F verdoppelt sich, weil F proportional zu x ist.", correct: true },
+  { text: "F halbiert sich, weil die Feder mehr nachgibt.", correct: false },
+  { text: "F wird viermal so groß.", correct: false },
+];
+const CORRECT_CODE = "0615";
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+function buildMCOptions(container, options, varName, btnId) {
+  const letters = ['A','B','C','D'];
+  container.innerHTML = '';
+  options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'mc-option';
+    div.innerHTML = `<div class="opt-letter">${letters[i]}</div><p>${opt.text}</p>`;
+    div.onclick = () => {
+      if (div.classList.contains('correct') || div.classList.contains('wrong')) return;
+      container.querySelectorAll('.mc-option').forEach(d => d.classList.remove('selected'));
+      div.classList.add('selected');
+      if (varName === 'mc1') mc1Selected = i;
+      if (varName === 'mc2') mc2Selected = i;
+      document.getElementById(btnId).disabled = false;
+    };
+    container.appendChild(div);
+  });
+}
+
+function startGame() {
+  lives = 3; score = 0; currentStage = 1;
+  mc1Selected = null; mc2Selected = null; stage3Done = false;
+  updateHearts();
+  showScreen('game');
+  goToStage(1);
+  buildMCOptions(document.getElementById('mc1-options'), MC1, 'mc1', 'btn1');
+  buildMCOptions(document.getElementById('mc2-options'), MC2, 'mc2', 'btn2');
+  updateSim();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goToStage(n) {
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('stage'+i);
+    if (el) el.style.display = (i === n) ? 'block' : 'none';
+  });
+  currentStage = n;
+  document.getElementById('progressFill').style.width = ((n-1)/4*100) + '%';
+  document.getElementById('stepLabel').textContent = `Aufgabe ${n} von 4`;
+  // restart animation
+  const sw = document.querySelector('#stage'+n+'.stage-wrap') || document.getElementById('stage'+n);
+  if (sw) { sw.style.animation = 'none'; setTimeout(() => sw.style.animation = '', 10); }
+}
+
+// ─── HEARTS ──────────────────────────────────────────────────────────
+function updateHearts() {
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('h'+i).classList.toggle('lost', i > lives);
+  }
+}
+
+function loseLife() {
+  lives--;
+  updateHearts();
+  score = Math.max(0, score - 50);
+  if (lives <= 0) {
+    setTimeout(() => showScreen('gameover'), 800);
+    return true;
+  }
+  return false;
+}
+
+// ─── FEEDBACK ────────────────────────────────────────────────────────
+function showFeedback(id, success, msg) {
+  const el = document.getElementById(id);
+  el.className = 'feedback-box show ' + (success ? 'success' : 'error');
+  el.innerHTML = `<span class="fb-icon">${success ? '✅' : '❌'}</span>${msg}`;
+}
+
+// ─── STAGE 1 – MC ────────────────────────────────────────────────────
+function checkMC1() {
+  if (mc1Selected === null) return;
+  const opts = document.querySelectorAll('#mc1-options .mc-option');
+  const correct = MC1[mc1Selected].correct;
+  opts[mc1Selected].classList.remove('selected');
+  opts[mc1Selected].classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) {
+    // show correct
+    MC1.forEach((o,i) => { if (o.correct) opts[i].classList.add('correct'); });
+    showFeedback('fb1', false, 'Leider falsch. Das Hooksches Gesetz beschreibt die Proportionalität zwischen Kraft und Dehnung.');
+    if (!loseLife()) {
+      mc1Selected = null;
+      document.getElementById('btn1').disabled = true;
+    }
+  } else {
+    showFeedback('fb1', true, 'Richtig! F = D · x – Kraft und Dehnung sind proportional. Weiter zum nächsten Raum!');
+    document.getElementById('btn1').onclick = () => goToStage(2);
+    document.getElementById('btn1').textContent = 'Nächster Raum →';
+    document.getElementById('btn1').disabled = false;
+    score += 100;
+  }
+}
+
+// ─── STAGE 2 – Simulation + MC ───────────────────────────────────────
+function checkMC2() {
+  if (mc2Selected === null) return;
+  const opts = document.querySelectorAll('#mc2-options .mc-option');
+  const correct = MC2[mc2Selected].correct;
+  opts[mc2Selected].classList.remove('selected');
+  opts[mc2Selected].classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) {
+    MC2.forEach((o,i) => { if (o.correct) opts[i].classList.add('correct'); });
+    showFeedback('fb2', false, 'Falsch. F = D · x – wenn x doppelt so groß ist, ist F auch doppelt so groß (D bleibt gleich).');
+    if (!loseLife()) {
+      mc2Selected = null;
+      document.getElementById('btn2').disabled = true;
+    }
+  } else {
+    showFeedback('fb2', true, 'Genau! F ist direkt proportional zu x – verdoppelt sich x, verdoppelt sich F.');
+    document.getElementById('btn2').onclick = () => goToStage(3);
+    document.getElementById('btn2').textContent = 'Nächster Raum →';
+    document.getElementById('btn2').disabled = false;
+    score += 100;
+  }
+}
+
+// ─── STAGE 3 – Rechnen ───────────────────────────────────────────────
+function checkCalc3() {
+  if (stage3Done) { goToStage(4); return; }
+  const inp = document.getElementById('calcInput3');
+  const val = parseFloat(inp.value);
+  // F = 0.4 * 10 = 4N, D = 4/0.08 = 50 N/m
+  if (Math.abs(val - 50) < 1) {
+    inp.classList.add('correct');
+    showFeedback('fb3', true, 'Korrekt! F = 0,4 · 10 = 4 N → D = 4 / 0,08 = 50 N/m. Weiter zum Tresor!');
+    score += 150;
+    stage3Done = true;
+    const btn = document.querySelector('#stage3 .btn-primary');
+    btn.textContent = 'Zum Tresor →';
+    btn.onclick = () => goToStage(4);
+  } else {
+    inp.classList.add('wrong');
+    showFeedback('fb3', false, `Nicht ganz. Tipp: Berechne zuerst F = m · g, dann D = F / x. Du hast ${val} eingegeben.`);
+    setTimeout(() => inp.classList.remove('wrong'), 1200);
+    loseLife();
+  }
+}
+
+// ─── STAGE 4 – Code ──────────────────────────────────────────────────
+// A: F = 300 * 0.02 = 6 N → "06"
+// B: x = 120/800 = 0.15 m → "15"
+// Code: 0615
+function digitInput(el, nextId) {
+  el.value = el.value.replace(/[^0-9]/g,'').slice(-1);
+  if (el.value && nextId) document.getElementById(nextId).focus();
+}
+function digitBack(e, el, prevId) {
+  if (e.key === 'Backspace' && !el.value && prevId) document.getElementById(prevId).focus();
+}
+function checkCode() {
+  const code = ['d1','d2','d3','d4'].map(id => document.getElementById(id).value).join('');
+  if (code === CORRECT_CODE) {
+    ['d1','d2','d3','d4'].forEach(id => document.getElementById(id).classList.add('correct-d'));
+    document.getElementById('lockIcon').textContent = '🔓';
+    document.getElementById('lockIcon').classList.add('open');
+    showFeedback('fb4', true, 'Code korrekt! A: 300 · 0,02 = 6 N → "06" | B: 120 / 800 = 0,15 m → "15" | Code: 0615');
+    score += 200;
+    document.getElementById('progressFill').style.width = '100%';
+    document.getElementById('stepLabel').textContent = 'Abgeschlossen!';
+    setTimeout(() => {
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('finalMsg').textContent = score >= 500 ? '🌟 Perfekte Leistung!' : score >= 350 ? '🎯 Sehr gut!' : '👍 Gut gemacht!';
+      showScreen('success');
+    }, 1400);
+  } else {
+    ['d1','d2','d3','d4'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.add('wrong-d');
+      setTimeout(() => el.classList.remove('wrong-d'), 600);
+    });
+    showFeedback('fb4', false, 'Falscher Code. Überprüfe deine Rechnungen – A: F = D · x | B: x = F / D');
+    loseLife();
+  }
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('show');
+}
+function restartGame() { startGame(); }
+function showSummary() {
+  const s = document.getElementById('summary');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+// ─── SPRING SIMULATION ───────────────────────────────────────────────
+const canvas = document.getElementById('springCanvas');
+const ctx = canvas.getContext('2d');
+
+function updateSim() {
+  const D = parseFloat(document.getElementById('sliderD').value);
+  const xCm = parseFloat(document.getElementById('sliderX').value);
+  const x = xCm / 100;
+  const F = D * x;
+
+  document.getElementById('dVal').textContent = D + ' N/m';
+  document.getElementById('xVal').textContent = x.toFixed(2) + ' m';
+  document.getElementById('forceVal').textContent = F.toFixed(1) + ' N';
+  document.getElementById('dValR').textContent = D + ' N/m';
+  document.getElementById('xValR').textContent = x.toFixed(2) + ' m';
+  document.getElementById('simCheck').textContent = '✓';
+
+  drawSpring(D, x, F);
+}
+
+function drawSpring(D, x, F) {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Ceiling
+  ctx.fillStyle = '#3a3550';
+  ctx.fillRect(0, 0, w, 18);
+  ctx.fillStyle = '#6b6890';
+  ctx.fillRect(0, 18, w, 3);
+
+  const anchorX = w / 2;
+  const anchorY = 21;
+  const naturalLen = 100;
+  const stretchPx = Math.min(x * 400, 120);
+  const springBottom = anchorY + naturalLen + stretchPx;
+  const coils = 8;
+
+  // Draw spring
+  ctx.beginPath();
+  ctx.moveTo(anchorX, anchorY);
+  const coilH = (springBottom - anchorY) / coils;
+  const coilW = 28;
+  for (let i = 0; i < coils; i++) {
+    const y0 = anchorY + i * coilH;
+    const y1 = y0 + coilH;
+    ctx.bezierCurveTo(
+      anchorX + coilW, y0 + coilH * 0.25,
+      anchorX + coilW, y0 + coilH * 0.75,
+      anchorX, y0 + coilH
+    );
+  }
+  const stiffness = Math.min(D / 200, 1);
+  const r = Math.round(40 + stiffness * 190);
+  const g2 = Math.round(200 - stiffness * 140);
+  ctx.strokeStyle = `rgb(${r},${g2},90)`;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Weight block
+  const blockW = 70, blockH = 44;
+  const bx = anchorX - blockW / 2;
+  const by = springBottom;
+  ctx.fillStyle = '#5c4ff0';
+  ctx.beginPath();
+  ctx.roundRect(bx, by, blockW, blockH, 8);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(bx, by, blockW, 8);
+  ctx.fillStyle = '#e8e6f0';
+  ctx.font = 'bold 13px Syne, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(F.toFixed(1) + ' N', anchorX, by + 27);
+
+  // Force arrow
+  if (F > 0) {
+    const arrowLen = Math.min(F * 2.5, 55);
+    const ax = anchorX + 48;
+    const ay = by + blockH / 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax, ay + arrowLen);
+    ctx.strokeStyle = '#e8a838';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ax - 5, ay + arrowLen - 8);
+    ctx.lineTo(ax, ay + arrowLen);
+    ctx.lineTo(ax + 5, ay + arrowLen - 8);
+    ctx.strokeStyle = '#e8a838';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#e8a838';
+    ctx.font = '10px Syne, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('F', ax + 7, ay + arrowLen / 2 + 4);
+  }
+
+  // x label
+  if (stretchPx > 5) {
+    const lx = anchorX - 55;
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = '#6b6890';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(lx, anchorY + naturalLen);
+    ctx.lineTo(lx, springBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#a09cc0';
+    ctx.font = '11px Syne, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('x = ' + x.toFixed(2) + 'm', lx, (anchorY + naturalLen + springBottom) / 2 + 4);
+  }
+}
+
+// Polyfill roundRect for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    this.closePath();
+    return this;
+  };
+}
+</script>
+</body>
+</html>
