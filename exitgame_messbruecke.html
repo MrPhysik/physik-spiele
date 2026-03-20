@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exit Game – Wheatstone-Messbrücke</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050a0f;
+      --panel: #0a1520;
+      --panel2: #0d1c2e;
+      --border: rgba(0,255,255,0.2);
+      --glow: #00ffff;
+      --accent: #ff6b00;
+      --text: #c8e8f0;
+      --dim: #4a7a8a;
+      --green: #00ff88;
+      --red: #ff3355;
+      --yellow: #ffe033;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,255,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(5,10,15,0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-btn {
+      color: var(--dim);
+      text-decoration: none;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      border: 1px solid rgba(74,122,138,0.3);
+      padding: 6px 12px;
+      transition: all 0.2s;
+    }
+    .back-btn:hover { color: var(--glow); border-color: var(--glow); }
+
+    .game-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--glow);
+      letter-spacing: 3px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .progress-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+
+    .progress-bar {
+      width: 140px;
+      height: 4px;
+      background: rgba(0,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--glow), #00ff88);
+      border-radius: 2px;
+      transition: width 0.6s ease;
+      box-shadow: 0 0 8px var(--glow);
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .game-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 90px 20px 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ===== INTRO SCREEN ===== */
+    .screen { display: none; animation: screenIn 0.5s ease; }
+    .screen.active { display: block; }
+
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== STORY BOX ===== */
+    .story-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 28px 32px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .story-box::before {
+      content: 'MISSIONSBRIEFING';
+      position: absolute;
+      top: -10px; left: 20px;
+      background: var(--bg);
+      padding: 0 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    .story-box h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(18px, 3vw, 26px);
+      color: #fff;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+
+    .story-box p {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text);
+      font-weight: 400;
+    }
+
+    .story-box p + p { margin-top: 10px; }
+
+    /* ===== PUZZLE CARD ===== */
+    .puzzle-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 30px;
+      margin-bottom: 24px;
+      position: relative;
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+    }
+
+    .puzzle-num {
+      position: absolute;
+      top: 14px; right: 30px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 2px;
+    }
+
+    .puzzle-card h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 15px;
+      color: var(--glow);
+      letter-spacing: 2px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(0,255,255,0.1);
+      text-transform: uppercase;
+    }
+
+    .puzzle-card .task {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    /* Circuit Diagram (SVG) */
+    .circuit-display {
+      background: rgba(0,10,15,0.8);
+      border: 1px solid rgba(0,255,255,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .circuit-display svg {
+      max-width: 100%;
+      filter: drop-shadow(0 0 6px rgba(0,255,255,0.3));
+    }
+
+    /* Formula display */
+    .formula-box {
+      background: rgba(0,255,255,0.04);
+      border: 1px solid rgba(0,255,255,0.15);
+      border-left: 3px solid var(--glow);
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 15px;
+      color: var(--glow);
+      letter-spacing: 1px;
+    }
+
+    /* Multiple choice */
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .choice-btn {
+      background: rgba(0,255,255,0.04);
+      border: 1px solid rgba(0,255,255,0.2);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 18px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .choice-btn:hover {
+      background: rgba(0,255,255,0.1);
+      border-color: var(--glow);
+      color: #fff;
+    }
+
+    .choice-btn.correct {
+      background: rgba(0,255,136,0.15) !important;
+      border-color: var(--green) !important;
+      color: var(--green) !important;
+    }
+
+    .choice-btn.wrong {
+      background: rgba(255,51,85,0.1) !important;
+      border-color: var(--red) !important;
+      color: var(--red) !important;
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .choice-btn.disabled { pointer-events: none; opacity: 0.5; }
+
+    /* Input answer */
+    .answer-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .answer-input {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(0,255,255,0.3);
+      color: var(--glow);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 20px;
+      padding: 12px 20px;
+      width: 160px;
+      text-align: center;
+      letter-spacing: 3px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .answer-input:focus {
+      border-color: var(--glow);
+      box-shadow: 0 0 15px rgba(0,255,255,0.2);
+    }
+
+    .answer-input.correct {
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 0 15px rgba(0,255,136,0.3);
+    }
+
+    .answer-input.wrong {
+      border-color: var(--red);
+      color: var(--red);
+      animation: shake 0.4s ease;
+    }
+
+    .unit-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 16px;
+      color: var(--dim);
+    }
+
+    /* Buttons */
+    .btn {
+      background: transparent;
+      border: 1px solid var(--glow);
+      color: var(--glow);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--glow);
+      transform: translateY(110%);
+      transition: transform 0.3s;
+    }
+
+    .btn:hover { color: #000; }
+    .btn:hover::before { transform: translateY(0); }
+    .btn span { position: relative; z-index: 1; }
+
+    .btn-check {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-check::before { background: var(--accent); }
+
+    .btn-next {
+      border-color: var(--green);
+      color: var(--green);
+      display: none;
+    }
+    .btn-next::before { background: var(--green); }
+    .btn-next.visible { display: inline-flex; }
+
+    /* Feedback */
+    .feedback {
+      margin-top: 18px;
+      padding: 16px 20px;
+      border: 1px solid;
+      font-size: 15px;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .feedback.show { display: block; animation: screenIn 0.3s ease; }
+
+    .feedback.ok {
+      background: rgba(0,255,136,0.07);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .feedback.err {
+      background: rgba(255,51,85,0.07);
+      border-color: var(--red);
+      color: #ff8899;
+    }
+
+    .feedback strong {
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* Hint */
+    .hint-toggle {
+      background: none;
+      border: none;
+      color: var(--dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      padding: 8px 0;
+      transition: color 0.2s;
+    }
+    .hint-toggle:hover { color: var(--yellow); }
+
+    .hint-box {
+      background: rgba(255,224,51,0.05);
+      border: 1px solid rgba(255,224,51,0.2);
+      padding: 14px 18px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--yellow);
+      display: none;
+    }
+    .hint-box.show { display: block; }
+
+    /* Attempts counter */
+    .attempts {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      margin-top: 10px;
+      letter-spacing: 1px;
+    }
+
+    /* ===== CODE DISPLAY ===== */
+    .code-fragment {
+      display: inline-block;
+      background: rgba(0,255,255,0.08);
+      border: 2px solid var(--glow);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 28px;
+      padding: 8px 20px;
+      color: var(--glow);
+      letter-spacing: 6px;
+      text-shadow: 0 0 15px var(--glow);
+      margin: 6px 4px;
+    }
+
+    .code-fragment.locked {
+      color: var(--dim);
+      border-color: rgba(74,122,138,0.3);
+      text-shadow: none;
+      font-size: 22px;
+    }
+
+    .code-collector {
+      text-align: center;
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .code-collector h4 {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== FINAL LOCK ===== */
+    .final-lock {
+      text-align: center;
+      padding: 40px;
+      background: var(--panel);
+      border: 2px solid rgba(0,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .final-lock::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,255,255,0.05) 0%, transparent 70%);
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .lock-icon { font-size: 60px; margin-bottom: 20px; display: block; }
+
+    .final-lock h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 22px;
+      color: var(--glow);
+      margin-bottom: 12px;
+    }
+
+    .final-lock p {
+      color: var(--dim);
+      font-size: 15px;
+      margin-bottom: 30px;
+    }
+
+    .lock-input-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .lock-digit {
+      width: 56px;
+      height: 68px;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid rgba(0,255,255,0.3);
+      color: var(--glow);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 28px;
+      text-align: center;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .lock-digit:focus {
+      border-color: var(--glow);
+      box-shadow: 0 0 20px rgba(0,255,255,0.3);
+    }
+
+    /* ===== SUCCESS SCREEN ===== */
+    .success-screen {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .success-icon {
+      font-size: 80px;
+      display: block;
+      margin-bottom: 20px;
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes bounceIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .success-screen h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(24px, 5vw, 40px);
+      color: var(--green);
+      text-shadow: 0 0 30px var(--green);
+      margin-bottom: 16px;
+    }
+
+    .success-screen p {
+      font-size: 18px;
+      color: var(--text);
+      max-width: 600px;
+      margin: 0 auto 30px;
+      line-height: 1.7;
+    }
+
+    .score-display {
+      display: inline-block;
+      background: rgba(0,255,136,0.08);
+      border: 2px solid var(--green);
+      padding: 20px 40px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--green);
+      font-size: 14px;
+      letter-spacing: 2px;
+      margin-bottom: 30px;
+    }
+
+    .score-num {
+      font-size: 48px;
+      display: block;
+      text-shadow: 0 0 20px var(--green);
+    }
+
+    /* ===== STEP INDICATOR ===== */
+    .step-indicators {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .step-dot {
+      width: 30px;
+      height: 4px;
+      background: rgba(0,255,255,0.1);
+      border-radius: 2px;
+      transition: all 0.4s;
+    }
+
+    .step-dot.done {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .step-dot.current {
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      width: 50px;
+    }
+
+    /* Tooltip / info box */
+    .info-callout {
+      background: rgba(0,255,255,0.04);
+      border: 1px solid rgba(0,255,255,0.1);
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: 14px;
+      color: var(--dim);
+      line-height: 1.6;
+    }
+
+    .info-callout b { color: var(--text); }
+
+    /* Table for values */
+    .value-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      margin: 16px 0;
+    }
+
+    .value-table th {
+      background: rgba(0,255,255,0.08);
+      color: var(--glow);
+      padding: 10px 14px;
+      text-align: left;
+      border: 1px solid rgba(0,255,255,0.15);
+      letter-spacing: 1px;
+      font-size: 12px;
+    }
+
+    .value-table td {
+      padding: 10px 14px;
+      border: 1px solid rgba(0,255,255,0.08);
+      color: var(--text);
+    }
+
+    .value-table tr:nth-child(even) td {
+      background: rgba(0,255,255,0.02);
+    }
+
+    .highlight-cell {
+      color: var(--accent) !important;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <a href="index.html" class="back-btn">← ZURÜCK</a>
+      <span class="game-title">MISSION: LABORFREIGABE</span>
+    </div>
+    <div class="topbar-right">
+      <span class="progress-label" id="progressLabel">RÄTSEL 0/5</span>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-wrap">
+
+    <!-- Step indicators -->
+    <div class="step-indicators" id="stepDots">
+      <div class="step-dot current" id="dot0"></div>
+      <div class="step-dot" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+      <div class="step-dot" id="dot5"></div>
+    </div>
+
+    <!-- Code collector -->
+    <div class="code-collector">
+      <h4>⚙ GESAMMELTER ZUGANGSCODE</h4>
+      <div>
+        <span class="code-fragment locked" id="code0">?</span>
+        <span class="code-fragment locked" id="code1">?</span>
+        <span class="code-fragment locked" id="code2">?</span>
+        <span class="code-fragment locked" id="code3">?</span>
+        <span class="code-fragment locked" id="code4">?</span>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         INTRO SCREEN
+    ============================================================ -->
+    <div class="screen active" id="screen-intro">
+      <div class="story-box">
+        <h2>🔬 Das gesperrte Messlabor</h2>
+        <p>Du bist Auszubildende/r im Betrieb <em>„Elektro-Precision GmbH"</em>. Heute morgen stellt dein Ausbilder fest: Das Messlabor ist gesperrt! Der Zugangs-Code wurde durch ein Software-Update zurückgesetzt.</p>
+        <p>Der neue Code wurde in 5 Teile zerlegt und in Messaufgaben zur <strong>Wheatstone-Brückenschaltung</strong> versteckt. Wer alle Aufgaben löst, erhält die Ziffern – und damit Zugang zum Labor.</p>
+        <p>Viel Erfolg!</p>
+      </div>
+
+      <div style="text-align:center; margin-top: 30px;">
+        <button class="btn" onclick="startGame()"><span>Mission starten →</span></button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         RÄTSEL 1: Grundprinzip & Aufbau
+    ============================================================ -->
+    <div class="screen" id="screen-1">
+      <div class="puzzle-card">
+        <span class="puzzle-num">RÄTSEL 01 / 05</span>
+        <h3>🔐 Das Grundprinzip</h3>
+        <p class="task">Du findest im Labor ein altes Lehrbuch. Darin steht: „Eine Wheatstone-Brücke ist im Abgleich, wenn…"</p>
+
+        <div class="circuit-display">
+          <svg viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg" width="340" height="240">
+            <!-- Nodes -->
+            <circle cx="170" cy="30" r="6" fill="#00ffff" opacity="0.8"/>
+            <circle cx="60" cy="120" r="6" fill="#00ffff" opacity="0.8"/>
+            <circle cx="280" cy="120" r="6" fill="#00ffff" opacity="0.8"/>
+            <circle cx="170" cy="210" r="6" fill="#00ffff" opacity="0.8"/>
+            <!-- Lines -->
+            <line x1="170" y1="30" x2="60" y2="120" stroke="#00ffff" stroke-width="2"/>
+            <line x1="170" y1="30" x2="280" y2="120" stroke="#00ffff" stroke-width="2"/>
+            <line x1="60" y1="120" x2="170" y2="210" stroke="#00ffff" stroke-width="2"/>
+            <line x1="280" y1="120" x2="170" y2="210" stroke="#00ffff" stroke-width="2"/>
+            <!-- Galvanometer bridge -->
+            <line x1="60" y1="120" x2="110" y2="120" stroke="#ff6b00" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="230" y1="120" x2="280" y2="120" stroke="#ff6b00" stroke-width="2" stroke-dasharray="5,3"/>
+            <circle cx="170" cy="120" r="22" fill="none" stroke="#ff6b00" stroke-width="2"/>
+            <text x="170" y="126" text-anchor="middle" fill="#ff6b00" font-size="14" font-family="serif" font-style="italic">G</text>
+            <!-- Resistor R1 (top-left) -->
+            <rect x="83" y="61" width="40" height="14" rx="2" fill="#0a1520" stroke="#00ffff" stroke-width="1.5" transform="rotate(-45 103 68)"/>
+            <text x="75" y="58" fill="#e0f8ff" font-size="13" font-family="Share Tech Mono,monospace">R₁</text>
+            <!-- Resistor R2 (top-right) -->
+            <rect x="217" y="61" width="40" height="14" rx="2" fill="#0a1520" stroke="#00ffff" stroke-width="1.5" transform="rotate(45 237 68)"/>
+            <text x="245" y="58" fill="#e0f8ff" font-size="13" font-family="Share Tech Mono,monospace">R₂</text>
+            <!-- Resistor R3 (bottom-left) -->
+            <rect x="83" y="155" width="40" height="14" rx="2" fill="#0a1520" stroke="#00ffff" stroke-width="1.5" transform="rotate(45 103 162)"/>
+            <text x="62" y="178" fill="#e0f8ff" font-size="13" font-family="Share Tech Mono,monospace">R₃</text>
+            <!-- Resistor Rx (bottom-right) -->
+            <rect x="217" y="155" width="40" height="14" rx="2" fill="#0a1520" stroke="#ff6b00" stroke-width="1.5" transform="rotate(-45 237 162)"/>
+            <text x="242" y="178" fill="#ff6b00" font-size="13" font-family="Share Tech Mono,monospace">Rₓ</text>
+            <!-- Voltage source -->
+            <line x1="170" y1="30" x2="170" y2="10" stroke="#00ffff" stroke-width="2"/>
+            <line x1="170" y1="210" x2="170" y2="228" stroke="#00ffff" stroke-width="2"/>
+            <text x="178" y="20" fill="#ffe033" font-size="12" font-family="Share Tech Mono,monospace">U₀</text>
+            <!-- Labels -->
+            <text x="170" y="14" text-anchor="middle" fill="none"/>
+          </svg>
+        </div>
+
+        <p class="task">Welche Bedingung muss erfüllt sein, damit das Galvanometer <strong>keinen Strom</strong> anzeigt (Brücke abgeglichen)?</p>
+
+        <div class="choices" id="choices1">
+          <button class="choice-btn" onclick="checkChoice(this,1,false)"><span>A&nbsp;&nbsp;</span> R₁ + R₂ = R₃ + Rₓ</button>
+          <button class="choice-btn" onclick="checkChoice(this,1,true)"><span>B&nbsp;&nbsp;</span> R₁ · Rₓ = R₂ · R₃</button>
+          <button class="choice-btn" onclick="checkChoice(this,1,false)"><span>C&nbsp;&nbsp;</span> R₁ / R₂ = Rₓ / R₃</button>
+          <button class="choice-btn" onclick="checkChoice(this,1,false)"><span>D&nbsp;&nbsp;</span> R₁ · R₂ = R₃ · Rₓ</button>
+        </div>
+
+        <div class="feedback" id="fb1"></div>
+
+        <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button class="hint-toggle" onclick="toggleHint(1)">💡 Hinweis anzeigen</button>
+          <button class="btn btn-next" id="next1" onclick="nextPuzzle(2)"><span>Weiter →</span></button>
+        </div>
+        <div class="hint-box" id="hint1">
+          Beim Abgleich sind die Verhältnisse der Widerstände in den Zweigen gleich: <em>R₁/R₂ = R₃/Rₓ</em> — das entspricht der Kreuzregel!
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         RÄTSEL 2: Berechnung Rx
+    ============================================================ -->
+    <div class="screen" id="screen-2">
+      <div class="story-box" style="border-left-color: var(--glow);">
+        <h2>📦 Im Lagerraum</h2>
+        <p>Du findest einen Kasten mit unbekannten Widerständen. Ein Zettel liegt dabei: „Mit der Brücke gemessen – Ergebnis fehlt!" Kannst du den fehlenden Wert berechnen?</p>
+      </div>
+      <div class="puzzle-card">
+        <span class="puzzle-num">RÄTSEL 02 / 05</span>
+        <h3>🔐 Rₓ Berechnen</h3>
+
+        <table class="value-table">
+          <thead>
+            <tr><th>Widerstand</th><th>Wert</th><th>Bedeutung</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R₁</td><td>1.000 Ω</td><td>Bekannter Messwiderstand</td></tr>
+            <tr><td>R₂</td><td>2.000 Ω</td><td>Bekannter Messwiderstand</td></tr>
+            <tr><td>R₃</td><td>3.300 Ω</td><td>Abgeglichener Vergleichswiderstand</td></tr>
+            <tr class="highlight-cell"><td>Rₓ</td><td class="highlight-cell">???</td><td>Unbekannter Widerstand</td></tr>
+          </tbody>
+        </table>
+
+        <div class="formula-box">
+          Abgleichbedingung: R₁ · Rₓ = R₂ · R₃
+          <br>→ Rₓ = (R₂ · R₃) / R₁
+        </div>
+
+        <p class="task">Berechne Rₓ und gib das Ergebnis in <strong>Ohm (Ω)</strong> ein:</p>
+
+        <div class="answer-row">
+          <input type="number" class="answer-input" id="ans2" placeholder="????">
+          <span class="unit-label">Ω</span>
+          <button class="btn btn-check" onclick="checkInput(2, 6600, 50)"><span>Prüfen</span></button>
+        </div>
+        <p class="attempts" id="att2"></p>
+
+        <div class="feedback" id="fb2"></div>
+
+        <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button class="hint-toggle" onclick="toggleHint(2)">💡 Hinweis anzeigen</button>
+          <button class="btn btn-next" id="next2" onclick="nextPuzzle(3)"><span>Weiter →</span></button>
+        </div>
+        <div class="hint-box" id="hint2">
+          Rₓ = (R₂ × R₃) / R₁ = (2.000 × 3.300) / 1.000 = ?
+          Multipliziere zuerst Zähler, dann dividiere durch R₁.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         RÄTSEL 3: Galvanometer & Brückenspannung
+    ============================================================ -->
+    <div class="screen" id="screen-3">
+      <div class="story-box" style="border-left-color: var(--glow);">
+        <h2>⚡ Das Galvanometer schlägt aus!</h2>
+        <p>Der Techniker kommt vorbei und fragt: „Weißt du überhaupt, warum das Galvanometer ausschlägt, wenn die Brücke nicht abgeglichen ist?" Du solltest das wissen!</p>
+      </div>
+      <div class="puzzle-card">
+        <span class="puzzle-num">RÄTSEL 03 / 05</span>
+        <h3>🔐 Das Galvanometer</h3>
+        <p class="task">Was misst das Galvanometer in der Brückenschaltung, wenn die Brücke <em>nicht</em> abgeglichen ist?</p>
+
+        <div class="choices" id="choices3">
+          <button class="choice-btn" onclick="checkChoice(this,3,false)"><span>A&nbsp;&nbsp;</span> Den Gesamtstrom der Schaltung</button>
+          <button class="choice-btn" onclick="checkChoice(this,3,false)"><span>B&nbsp;&nbsp;</span> Die Versorgungsspannung U₀</button>
+          <button class="choice-btn" onclick="checkChoice(this,3,true)"><span>C&nbsp;&nbsp;</span> Die Brückenspannung (Potentialdifferenz zwischen den Mittelpunkten)</button>
+          <button class="choice-btn" onclick="checkChoice(this,3,false)"><span>D&nbsp;&nbsp;</span> Den Kurzschlussstrom</button>
+        </div>
+
+        <div class="feedback" id="fb3"></div>
+
+        <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button class="hint-toggle" onclick="toggleHint(3)">💡 Hinweis anzeigen</button>
+          <button class="btn btn-next" id="next3" onclick="nextPuzzle(4)"><span>Weiter →</span></button>
+        </div>
+        <div class="hint-box" id="hint3">
+          Die Brücke verbindet zwei Spannungsteiler. Wenn beide Teiler nicht gleich eingestellt sind, entsteht eine Potentialdifferenz – genau diese Spannung treibt den Strom durch das Galvanometer.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         RÄTSEL 4: Anwendung – Dehnmessstreifen
+    ============================================================ -->
+    <div class="screen" id="screen-4">
+      <div class="story-box" style="border-left-color: var(--glow);">
+        <h2>🏭 In der Fertigung</h2>
+        <p>Im Fertigungsbereich siehst du eine Druckmessanlage. Ein Schild erklärt: „Hier wird ein Dehnmessstreifen (DMS) als Sensor eingesetzt." Du erinnerst dich an die Theorie…</p>
+      </div>
+      <div class="puzzle-card">
+        <span class="puzzle-num">RÄTSEL 04 / 05</span>
+        <h3>🔐 Sensortechnik – DMS</h3>
+        <p class="task">Ein Dehnmessstreifen (DMS) wird als Widerstand Rₓ in eine Wheatstone-Brücke eingebaut. Was passiert mit der Brückenspannung, wenn der DMS mechanisch gedehnt wird?</p>
+
+        <div class="info-callout">
+          <b>Info:</b> Ein Dehnmessstreifen verändert seinen elektrischen Widerstand, wenn er mechanisch verformt (gedehnt oder gestaucht) wird. Diese Widerstandsänderung ΔR ist proportional zur mechanischen Dehnung ε.
+        </div>
+
+        <div class="choices" id="choices4">
+          <button class="choice-btn" onclick="checkChoice(this,4,false)"><span>A&nbsp;&nbsp;</span> Die Brückenspannung bleibt null, da der Gesamtwiderstand gleich bleibt</button>
+          <button class="choice-btn" onclick="checkChoice(this,4,true)"><span>B&nbsp;&nbsp;</span> Die Brücke verstimmt sich – die Brückenspannung wird ungleich null</button>
+          <button class="choice-btn" onclick="checkChoice(this,4,false)"><span>C&nbsp;&nbsp;</span> Der Strom der Versorgungsquelle sinkt auf null</button>
+          <button class="choice-btn" onclick="checkChoice(this,4,false)"><span>D&nbsp;&nbsp;</span> Alle anderen Widerstände ändern sich ebenfalls</button>
+        </div>
+
+        <div class="feedback" id="fb4"></div>
+
+        <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button class="hint-toggle" onclick="toggleHint(4)">💡 Hinweis anzeigen</button>
+          <button class="btn btn-next" id="next4" onclick="nextPuzzle(5)"><span>Weiter →</span></button>
+        </div>
+        <div class="hint-box" id="hint4">
+          Die Brücke war vor der Dehnung abgeglichen (Brückenspannung = 0). Wenn nun Rₓ sich ändert, wird die Abgleichbedingung verletzt → die Brücke „verstimmt" sich und es entsteht eine messbare Brückenspannung.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         RÄTSEL 5: Berechnung mit vorgegebener Brückenspannung
+    ============================================================ -->
+    <div class="screen" id="screen-5">
+      <div class="story-box" style="border-left-color: var(--glow);">
+        <h2>📐 Die letzte Messung</h2>
+        <p>Auf dem Labortisch liegt ein Messprotokoll. Ein Wert ist unleserlich – genau jener, den du für den Zugangscode brauchst!</p>
+      </div>
+      <div class="puzzle-card">
+        <span class="puzzle-num">RÄTSEL 05 / 05</span>
+        <h3>🔐 Finale Berechnung</h3>
+
+        <p class="task">Eine abgeglichene Wheatstone-Brücke hat folgende Werte:</p>
+
+        <table class="value-table">
+          <thead>
+            <tr><th>Größe</th><th>Wert</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R₁</td><td>470 Ω</td></tr>
+            <tr><td>R₂</td><td>470 Ω</td></tr>
+            <tr><td>R₃</td><td>820 Ω</td></tr>
+            <tr class="highlight-cell"><td>Rₓ (abgeglichen)</td><td class="highlight-cell">??? Ω</td></tr>
+          </tbody>
+        </table>
+
+        <div class="formula-box">
+          Abgleichbedingung: Rₓ = (R₂ · R₃) / R₁
+        </div>
+
+        <p class="task">Berechne Rₓ (in Ω, ganzzahlig runden):</p>
+
+        <div class="answer-row">
+          <input type="number" class="answer-input" id="ans5" placeholder="???">
+          <span class="unit-label">Ω</span>
+          <button class="btn btn-check" onclick="checkInput(5, 820, 5)"><span>Prüfen</span></button>
+        </div>
+        <p class="attempts" id="att5"></p>
+
+        <div class="feedback" id="fb5"></div>
+
+        <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button class="hint-toggle" onclick="toggleHint(5)">💡 Hinweis anzeigen</button>
+          <button class="btn btn-next" id="next5" onclick="nextPuzzle(6)"><span>Weiter →</span></button>
+        </div>
+        <div class="hint-box" id="hint5">
+          Rₓ = (470 × 820) / 470 — schau genau hin: Was passiert, wenn R₁ = R₂? Dann kürzt sich etwas heraus!
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         FINALES SCHLOSS
+    ============================================================ -->
+    <div class="screen" id="screen-final">
+      <div class="story-box" style="border-left-color: var(--green);">
+        <h2>🔑 Der finale Code</h2>
+        <p>Du hast alle 5 Rätsel gelöst und alle Ziffern gesammelt! Gib jetzt den vollständigen 5-stelligen Code ein, um das Schloss zu öffnen.</p>
+      </div>
+
+      <div class="final-lock">
+        <span class="lock-icon">🔒</span>
+        <h3>Zugangscode eingeben</h3>
+        <p>Gib die 5 gesammelten Ziffern ein (eine pro Feld):</p>
+
+        <div class="lock-input-row">
+          <input type="text" maxlength="1" class="lock-digit" id="ld0" oninput="lockInput(0)" onkeydown="lockNav(event,0)">
+          <input type="text" maxlength="1" class="lock-digit" id="ld1" oninput="lockInput(1)" onkeydown="lockNav(event,1)">
+          <input type="text" maxlength="1" class="lock-digit" id="ld2" oninput="lockInput(2)" onkeydown="lockNav(event,2)">
+          <input type="text" maxlength="1" class="lock-digit" id="ld3" oninput="lockInput(3)" onkeydown="lockNav(event,3)">
+          <input type="text" maxlength="1" class="lock-digit" id="ld4" oninput="lockInput(4)" onkeydown="lockNav(event,4)">
+        </div>
+
+        <button class="btn" style="border-color:var(--green);color:var(--green)" onclick="checkFinalCode()">
+          <span>🔓 SCHLOSS ÖFFNEN</span>
+        </button>
+
+        <div class="feedback" id="fbFinal" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- Hint: show the collected codes -->
+      <div style="margin-top: 20px; text-align:center;">
+        <button class="hint-toggle" onclick="showCodeHint()">💡 Gesammelte Ziffern anzeigen</button>
+        <div class="hint-box" id="hintFinal" style="text-align:center; font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--glow); letter-spacing: 6px;"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SUCCESS
+    ============================================================ -->
+    <div class="screen" id="screen-success">
+      <div class="success-screen">
+        <span class="success-icon">🏆</span>
+        <h2>LABOR FREIGESCHALTET!</h2>
+        <p>Ausgezeichnet! Du hast alle Rätsel zur Wheatstone-Messbrücke gelöst und den Zugangscode erfolgreich geknackt. Das Messlabor ist jetzt offen!</p>
+
+        <div class="score-display">
+          <span class="score-num" id="finalScore">—</span>
+          PUNKTE
+        </div>
+
+        <div style="background: var(--panel); border: 1px solid var(--border); padding: 24px; max-width: 600px; margin: 0 auto 30px; text-align:left;">
+          <h4 style="font-family:'Orbitron',monospace; font-size:12px; color:var(--glow); letter-spacing:2px; margin-bottom:14px;">📚 ZUSAMMENFASSUNG: WAS DU GELERNT HAST</h4>
+          <ul style="list-style:none; display:flex; flex-direction:column; gap:10px;">
+            <li style="font-size:15px; color:var(--text); padding-left:16px; border-left:2px solid var(--glow);">
+              ✅ <strong>Abgleichbedingung:</strong> R₁ · Rₓ = R₂ · R₃ (Kreuzprodukt-Regel)
+            </li>
+            <li style="font-size:15px; color:var(--text); padding-left:16px; border-left:2px solid var(--glow);">
+              ✅ <strong>Galvanometer</strong> misst die Brückenspannung (Potentialdifferenz)
+            </li>
+            <li style="font-size:15px; color:var(--text); padding-left:16px; border-left:2px solid var(--glow);">
+              ✅ <strong>DMS-Sensor:</strong> Widerstandsänderung → Brückenverstimmung → Messsignal
+            </li>
+            <li style="font-size:15px; color:var(--text); padding-left:16px; border-left:2px solid var(--glow);">
+              ✅ <strong>Anwendungen:</strong> Kraft-, Druck- und Temperaturmessung mit Brückenschaltungen
+            </li>
+          </ul>
+        </div>
+
+        <a href="index.html" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
+          <span>← Zurück zur Startseite</span>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /game-wrap -->
+
+  <script>
+    // ============================================================
+    // GAME STATE
+    // ============================================================
+    const codes = ['?','?','?','?','?'];
+    const codeAnswers = ['3','7','4','2','8']; // Correct digits per puzzle
+    let solvedPuzzles = 0;
+    let totalAttempts = 0;
+    let attemptCounts = {1:0, 2:0, 3:0, 4:0, 5:0};
+
+    function updateProgress() {
+      const pct = (solvedPuzzles / 5) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = 'RÄTSEL ' + solvedPuzzles + '/5';
+    }
+
+    function updateStepDots(current) {
+      for (let i = 0; i <= 5; i++) {
+        const dot = document.getElementById('dot' + i);
+        dot.className = 'step-dot';
+        if (i < current) dot.classList.add('done');
+        else if (i === current) dot.classList.add('current');
+      }
+    }
+
+    function startGame() {
+      showScreen('screen-1');
+      updateStepDots(0);
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function nextPuzzle(n) {
+      if (n <= 5) {
+        showScreen('screen-' + n);
+        updateStepDots(n - 1);
+      } else {
+        showScreen('screen-final');
+        updateStepDots(5);
+        // Pre-fill lock with collected codes
+        for (let i = 0; i < 5; i++) {
+          if (codes[i] !== '?') {
+            document.getElementById('ld' + i).value = codes[i];
+          }
+        }
+      }
+    }
+
+    // ============================================================
+    // PUZZLE CHECKING
+    // ============================================================
+    function unlockCode(puzzleIndex, digit) {
+      codes[puzzleIndex] = digit;
+      const el = document.getElementById('code' + puzzleIndex);
+      el.textContent = digit;
+      el.classList.remove('locked');
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = 'screenIn 0.5s ease';
+    }
+
+    function checkChoice(btn, puzzle, correct) {
+      const btns = document.querySelectorAll('#choices' + puzzle + ' .choice-btn');
+      btns.forEach(b => b.classList.add('disabled'));
+      attemptCounts[puzzle]++;
+      totalAttempts++;
+
+      const fb = document.getElementById('fb' + puzzle);
+      const nextBtn = document.getElementById('next' + puzzle);
+
+      if (correct) {
+        btn.classList.add('correct');
+        fb.className = 'feedback ok show';
+
+        const messages = {
+          1: '✅ Richtig! Die Abgleichbedingung lautet: R₁ · Rₓ = R₂ · R₃. Diese Formel ergibt sich aus dem Kreuzprodukt der gegenüberliegenden Widerstände. Deine Code-Ziffer: <strong>3</strong>',
+          3: '✅ Richtig! Das Galvanometer misst die Brückenspannung – also die Potentialdifferenz zwischen den beiden Mittelpunkten der Spannungsteiler. Ist die Brücke abgeglichen, ist diese Spannung null. Deine Code-Ziffer: <strong>4</strong>',
+          4: '✅ Richtig! Wenn Rₓ (DMS) sich durch Dehnung ändert, wird die Abgleichbedingung verletzt. Die Brücke "verstimmt" sich und es entsteht eine messbare Brückenspannung, proportional zur Dehnung. Deine Code-Ziffer: <strong>2</strong>'
+        };
+
+        fb.innerHTML = messages[puzzle] || '✅ Korrekt!';
+        nextBtn.classList.add('visible');
+        solvedPuzzles++;
+        updateProgress();
+        updateStepDots(puzzle);
+
+        const digitMap = {1: 0, 3: 2, 4: 3};
+        const codeDigit = {1:'3', 3:'4', 4:'2'};
+        if (digitMap[puzzle] !== undefined) unlockCode(digitMap[puzzle], codeDigit[puzzle]);
+
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(() => {
+          btns.forEach(b => b.classList.remove('disabled'));
+          btn.classList.remove('wrong');
+        }, 1000);
+        fb.className = 'feedback err show';
+        fb.innerHTML = '❌ Nicht ganz richtig. Überlege noch einmal und schau dir den Schaltplan an!';
+      }
+    }
+
+    function checkInput(puzzle, correctVal, tolerance) {
+      const input = document.getElementById('ans' + puzzle);
+      const val = parseFloat(input.value);
+      const fb = document.getElementById('fb' + puzzle);
+      const nextBtn = document.getElementById('next' + puzzle);
+      const attEl = document.getElementById('att' + puzzle);
+      attemptCounts[puzzle]++;
+      totalAttempts++;
+
+      if (isNaN(val)) {
+        fb.className = 'feedback err show';
+        fb.innerHTML = '⚠️ Bitte gib eine Zahl ein.';
+        return;
+      }
+
+      if (Math.abs(val - correctVal) <= tolerance) {
+        input.classList.add('correct');
+        solvedPuzzles++;
+        updateProgress();
+        updateStepDots(puzzle);
+        nextBtn.classList.add('visible');
+        input.disabled = true;
+
+        const messages = {
+          2: '✅ Korrekt! Rₓ = (2.000 × 3.300) / 1.000 = <strong>6.600 Ω</strong>. Gut gerechnet! Deine Code-Ziffer: <strong>7</strong>',
+          5: '✅ Korrekt! Rₓ = (470 × 820) / 470 = <strong>820 Ω</strong>. Da R₁ = R₂, kürzt sich der Wert heraus und Rₓ = R₃! Deine Code-Ziffer: <strong>8</strong>'
+        };
+
+        fb.className = 'feedback ok show';
+        fb.innerHTML = messages[puzzle] || '✅ Richtig!';
+
+        const digitMap = {2: 1, 5: 4};
+        const codeDigit = {2:'7', 5:'8'};
+        if (digitMap[puzzle] !== undefined) unlockCode(digitMap[puzzle], codeDigit[puzzle]);
+
+      } else {
+        input.classList.add('wrong');
+        setTimeout(() => input.classList.remove('wrong'), 600);
+        attEl.textContent = 'Versuch ' + attemptCounts[puzzle] + ' – noch nicht richtig.';
+        fb.className = 'feedback err show';
+        if (attemptCounts[puzzle] >= 2) {
+          const hints = {
+            2: '❌ Nicht korrekt. Tipp: Rₓ = (R₂ × R₃) / R₁ = (2000 × 3300) / 1000',
+            5: '❌ Nicht korrekt. Tipp: Was passiert, wenn Zähler und Nenner den gleichen Faktor haben?'
+          };
+          fb.innerHTML = hints[puzzle] || '❌ Nicht korrekt. Überprüfe deine Rechnung.';
+        } else {
+          fb.innerHTML = '❌ Nicht korrekt. Rechne noch einmal nach!';
+        }
+      }
+    }
+
+    function toggleHint(n) {
+      const box = document.getElementById('hint' + n);
+      box.classList.toggle('show');
+    }
+
+    // ============================================================
+    // FINAL LOCK
+    // ============================================================
+    const finalCode = codeAnswers.join(''); // "37428"
+
+    function lockInput(i) {
+      const el = document.getElementById('ld' + i);
+      if (el.value.length === 1 && i < 4) {
+        document.getElementById('ld' + (i+1)).focus();
+      }
+    }
+
+    function lockNav(e, i) {
+      if (e.key === 'Backspace' && !document.getElementById('ld' + i).value && i > 0) {
+        document.getElementById('ld' + (i-1)).focus();
+      }
+    }
+
+    function showCodeHint() {
+      const el = document.getElementById('hintFinal');
+      el.textContent = codes.join(' - ');
+      el.classList.toggle('show');
+    }
+
+    function checkFinalCode() {
+      let entered = '';
+      for (let i = 0; i < 5; i++) {
+        entered += document.getElementById('ld' + i).value;
+      }
+
+      const fb = document.getElementById('fbFinal');
+
+      if (entered === finalCode) {
+        fb.className = 'feedback ok show';
+        fb.innerHTML = '🔓 CODE KORREKT! Labor wird entsperrt…';
+        setTimeout(() => {
+          // Calculate score
+          const maxScore = 1000;
+          const attemptPenalty = Math.min(totalAttempts - 5, 0) * 0; // bonus for being fast
+          const score = Math.max(200, maxScore - (totalAttempts - 5) * 30);
+          document.getElementById('finalScore').textContent = score;
+          showScreen('screen-success');
+          updateStepDots(6);
+        }, 1800);
+      } else {
+        fb.className = 'feedback err show';
+        fb.innerHTML = '🔒 Falscher Code! Überprüfe deine gesammelten Ziffern.';
+        for (let i = 0; i < 5; i++) {
+          const el = document.getElementById('ld' + i);
+          el.style.borderColor = 'var(--red)';
+          setTimeout(() => el.style.borderColor = '', 800);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
