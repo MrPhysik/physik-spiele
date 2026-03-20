@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Game – Kirchhoffsche Gesetze</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@400;600;700;900&display=swap');
+
+  :root {
+    --bg: #080e1a;
+    --panel: #0d1626;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --green: #00ff88;
+    --red: #ff3b5c;
+    --text: #c8dff0;
+    --muted: #4a6a8a;
+    --gold: #ffd700;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated circuit background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 32px 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(255,107,53,0.05));
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '⚡';
+    position: absolute;
+    font-size: 120px;
+    opacity: 0.04;
+    right: -10px;
+    top: -20px;
+    pointer-events: none;
+  }
+  .header-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .header h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 900;
+    line-height: 1.2;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* Lives */
+  .lives-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .hearts { display: flex; gap: 6px; }
+  .heart { font-size: 1.3rem; transition: all 0.3s; }
+  .heart.dead { opacity: 0.2; filter: grayscale(1); transform: scale(0.8); }
+
+  /* Progress */
+  .progress-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    justify-content: center;
+  }
+  .progress-dot {
+    width: 32px; height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: background 0.4s;
+  }
+  .progress-dot.done { background: var(--green); }
+  .progress-dot.active { background: var(--accent); animation: pulse-bar 1.5s infinite; }
+
+  @keyframes pulse-bar {
+    0%,100% { opacity: 1; } 50% { opacity: 0.5; }
+  }
+
+  /* Puzzle card */
+  .puzzle-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .puzzle-card.active { display: block; animation: fadeIn 0.4s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .puzzle-number {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 12px;
+  }
+  .puzzle-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  /* Circuit diagram (SVG-based) */
+  .circuit-box {
+    background: #060c18;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .circuit-box svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Formula display */
+  .formula-box {
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent);
+    text-align: center;
+  }
+  .formula-box small {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'Exo 2', sans-serif;
+  }
+
+  /* Info boxes */
+  .info-box {
+    background: rgba(0,255,136,0.04);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .info-box strong { color: var(--green); }
+
+  .tip-box {
+    background: rgba(255,215,0,0.04);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 0.82rem;
+    color: rgba(255,215,0,0.8);
+  }
+  .tip-box::before { content: '💡 '; }
+
+  /* Options (multiple choice) */
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .option-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .option-btn:hover { border-color: var(--accent); color: #fff; background: rgba(0,212,255,0.06); }
+  .option-btn .opt-label {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-family: 'Share Tech Mono', monospace;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .option-btn:hover .opt-label { border-color: var(--accent); color: var(--accent); }
+  .option-btn.correct { border-color: var(--green); background: rgba(0,255,136,0.08); color: #fff; }
+  .option-btn.correct .opt-label { background: var(--green); border-color: var(--green); color: #000; }
+  .option-btn.wrong { border-color: var(--red); background: rgba(255,59,92,0.08); opacity: 0.7; }
+  .option-btn.wrong .opt-label { background: var(--red); border-color: var(--red); color: #fff; }
+  .option-btn:disabled { cursor: default; }
+
+  /* Input */
+  .input-row {
+    display: flex; gap: 10px; margin-bottom: 18px;
+  }
+  .answer-input {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .answer-input:focus { border-color: var(--accent); }
+  .answer-input::placeholder { color: var(--muted); }
+
+  /* Buttons */
+  .btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 24px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #33ddff; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn.secondary:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+
+  /* Feedback */
+  .feedback {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .feedback.show { display: block; }
+  .feedback.success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--green); }
+  .feedback.error { background: rgba(255,59,92,0.1); border: 1px solid rgba(255,59,92,0.3); color: var(--red); }
+
+  /* Code fragment reveal */
+  .code-fragment {
+    display: inline-block;
+    background: rgba(0,212,255,0.12);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.4rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin: 8px 0;
+  }
+
+  /* Final unlock screen */
+  #final-screen {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--panel);
+    border: 1px solid var(--green);
+    border-radius: 20px;
+    animation: fadeIn 0.6s ease;
+  }
+  #final-screen.show { display: block; }
+  .unlock-icon { font-size: 4rem; margin-bottom: 16px; animation: bounce 1s ease infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+  .unlock-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+  .unlock-sub { color: var(--muted); margin-bottom: 24px; }
+  .final-code {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 2.2rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 12px;
+    padding: 16px 32px;
+    display: inline-block;
+    margin-bottom: 24px;
+  }
+
+  /* Game Over screen */
+  #gameover-screen {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--panel);
+    border: 1px solid var(--red);
+    border-radius: 20px;
+    animation: fadeIn 0.6s ease;
+  }
+  #gameover-screen.show { display: block; }
+  .gameover-icon { font-size: 3.5rem; margin-bottom: 16px; }
+  .gameover-title { font-size: 1.8rem; font-weight: 900; color: var(--red); margin-bottom: 8px; }
+  .gameover-sub { color: var(--muted); margin-bottom: 24px; }
+
+  /* Next button container */
+  .next-area { text-align: right; margin-top: 4px; }
+
+  /* Value table */
+  table.val-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-bottom: 18px;
+  }
+  table.val-table th {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 8px 12px;
+    text-align: left;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  table.val-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: var(--text);
+  }
+  table.val-table tr:last-child td { border-bottom: none; }
+  table.val-table td:last-child {
+    font-family: 'Share Tech Mono', monospace;
+    color: #fff;
+  }
+
+  /* Kirchhoff badge */
+  .kirchhoff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    color: var(--accent2);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-label">⚡ Exit Game · Elektrotechnik</div>
+    <h1>Kirchhoffsche <span>Gesetze</span></h1>
+    <p>Löse alle 5 Rätsel zu KVL &amp; KCL – knacke das Code-Schloss und entkamm!<br>Du hast 3 Leben. Viel Erfolg! 🔒</p>
+  </div>
+
+  <!-- Lives + Progress -->
+  <div class="lives-bar">
+    <div class="hearts">
+      <span class="heart" id="h1">❤️</span>
+      <span class="heart" id="h2">❤️</span>
+      <span class="heart" id="h3">❤️</span>
+    </div>
+    <span style="margin-left:8px;">Rätsel&nbsp;</span>
+    <span id="puzzle-counter" style="color:var(--accent);font-family:'Share Tech Mono',monospace">1 / 5</span>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-dot active" id="pd0"></div>
+    <div class="progress-dot" id="pd1"></div>
+    <div class="progress-dot" id="pd2"></div>
+    <div class="progress-dot" id="pd3"></div>
+    <div class="progress-dot" id="pd4"></div>
+  </div>
+
+  <!-- ─── RÄTSEL 1: Knotenregel – Einführung ─── -->
+  <div class="puzzle-card active" id="p0">
+    <div class="kirchhoff-badge">⚡ 1. Kirchhoffsches Gesetz</div>
+    <div class="puzzle-number">Rätsel 1 von 5</div>
+    <div class="puzzle-title">Das Knotengesetz – Was sagt es aus?</div>
+
+    <div class="circuit-box">
+      <svg viewBox="0 0 320 160" width="320" height="160" xmlns="http://www.w3.org/2000/svg">
+        <!-- Wires -->
+        <line x1="60" y1="80" x2="160" y2="80" stroke="#1e3a5f" stroke-width="2"/>
+        <line x1="160" y1="80" x2="260" y2="80" stroke="#1e3a5f" stroke-width="2"/>
+        <line x1="160" y1="80" x2="160" y2="140" stroke="#1e3a5f" stroke-width="2"/>
+        <!-- Arrows for current -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00d4ff"/>
+          </marker>
+        </defs>
+        <line x1="60" y1="80" x2="130" y2="80" stroke="#00d4ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="190" y1="80" x2="250" y2="80" stroke="#00d4ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="160" y1="80" x2="160" y2="130" stroke="#ff6b35" stroke-width="2" marker-end="url(#arr2)"/>
+        <defs>
+          <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#ff6b35"/>
+          </marker>
+        </defs>
+        <!-- Node dot -->
+        <circle cx="160" cy="80" r="6" fill="#00d4ff"/>
+        <!-- Labels -->
+        <text x="100" y="68" fill="#00d4ff" font-size="12" font-family="Share Tech Mono,monospace" text-anchor="middle">I₁ = 5A</text>
+        <text x="215" y="68" fill="#00d4ff" font-size="12" font-family="Share Tech Mono,monospace" text-anchor="middle">I₂ = ?</text>
+        <text x="185" y="120" fill="#ff6b35" font-size="12" font-family="Share Tech Mono,monospace">I₃ = 2A</text>
+        <text x="160" y="50" fill="#4a6a8a" font-size="11" font-family="Share Tech Mono,monospace" text-anchor="middle">Knoten K</text>
+      </svg>
+    </div>
+
+    <div class="info-box">
+      <strong>1. Kirchhoffsches Gesetz (Knotenregel / KCL):</strong><br>
+      Die Summe aller Ströme, die in einen Knoten hineinfließen, ist gleich der Summe aller Ströme, die aus dem Knoten herausfließen.<br><br>
+      <strong>Formel: ΣI<sub>ein</sub> = ΣI<sub>aus</sub></strong>
+    </div>
+
+    <p style="font-size:0.9rem;margin-bottom:14px;color:var(--text)">
+      In den Knoten K fließen I₁ = 5 A hinein und I₃ = 2 A heraus. Wie groß ist I₂ (herausfließend)?
+    </p>
+
+    <div class="options" id="opts-0">
+      <button class="option-btn" onclick="checkMC(0, 0, false)"><span class="opt-label">A</span> I₂ = 7 A</button>
+      <button class="option-btn" onclick="checkMC(0, 1, true)"><span class="opt-label">B</span> I₂ = 3 A</button>
+      <button class="option-btn" onclick="checkMC(0, 2, false)"><span class="opt-label">C</span> I₂ = 2 A</button>
+      <button class="option-btn" onclick="checkMC(0, 3, false)"><span class="opt-label">D</span> I₂ = 5 A</button>
+    </div>
+
+    <div class="feedback" id="fb-0"></div>
+    <div class="next-area"><button class="btn" id="next-0" onclick="nextPuzzle(1)" style="display:none">Weiter →</button></div>
+  </div>
+
+  <!-- ─── RÄTSEL 2: Maschenregel – Einführung ─── -->
+  <div class="puzzle-card" id="p1">
+    <div class="kirchhoff-badge" style="background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.3);color:var(--accent)">🔁 2. Kirchhoffsches Gesetz</div>
+    <div class="puzzle-number">Rätsel 2 von 5</div>
+    <div class="puzzle-title">Die Maschenregel – Welche Aussage stimmt?</div>
+
+    <div class="circuit-box">
+      <svg viewBox="0 0 320 160" width="320" height="160" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer rectangle -->
+        <rect x="40" y="30" width="240" height="100" rx="4" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+        <!-- Battery left -->
+        <line x1="40" y1="50" x2="40" y2="70" stroke="#00ff88" stroke-width="3"/>
+        <line x1="40" y1="90" x2="40" y2="110" stroke="#00ff88" stroke-width="3"/>
+        <line x1="30" y1="70" x2="50" y2="70" stroke="#00ff88" stroke-width="2"/>
+        <line x1="35" y1="80" x2="45" y2="80" stroke="#00ff88" stroke-width="1.5"/>
+        <text x="15" y="95" fill="#00ff88" font-size="11" font-family="Share Tech Mono,monospace">U=12V</text>
+        <!-- R1 top -->
+        <rect x="100" y="22" width="60" height="16" rx="3" fill="#1e3a5f" stroke="#00d4ff" stroke-width="1"/>
+        <text x="130" y="33" fill="#00d4ff" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="middle">R₁=4Ω</text>
+        <!-- R2 right -->
+        <rect x="264" y="55" width="16" height="50" rx="3" fill="#1e3a5f" stroke="#00d4ff" stroke-width="1"/>
+        <text x="295" y="83" fill="#00d4ff" font-size="10" font-family="Share Tech Mono,monospace">R₂=2Ω</text>
+        <!-- Arrow for current direction -->
+        <defs>
+          <marker id="arr3" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#ffd700"/>
+          </marker>
+        </defs>
+        <path d="M200,80 Q160,80 160,80" stroke="#ffd700" stroke-width="1.5" stroke-dasharray="4,3" fill="none" marker-end="url(#arr3)"/>
+        <text x="160" y="75" fill="#ffd700" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="middle">↺ Masche</text>
+      </svg>
+    </div>
+
+    <div class="info-box">
+      <strong>2. Kirchhoffsches Gesetz (Maschenregel / KVL):</strong><br>
+      Die Summe aller Spannungen in einer geschlossenen Masche ist gleich null.<br><br>
+      <strong>Formel: ΣU = 0 (in einer Masche)</strong><br>
+      Quellspannungen werden positiv gezählt, Spannungsabfälle an Widerständen negativ.
+    </div>
+
+    <p style="font-size:0.9rem;margin-bottom:14px;color:var(--text)">
+      Welche Aussage beschreibt das <strong>2. Kirchhoffsche Gesetz</strong> korrekt?
+    </p>
+
+    <div class="options" id="opts-1">
+      <button class="option-btn" onclick="checkMC(1, 0, false)"><span class="opt-label">A</span> Die Summe der Ströme in einer Masche ist null.</button>
+      <button class="option-btn" onclick="checkMC(1, 1, false)"><span class="opt-label">B</span> In jedem Knoten ist die Stromstärke konstant.</button>
+      <button class="option-btn" onclick="checkMC(1, 2, true)"><span class="opt-label">C</span> Die Summe aller Spannungen in einer geschlossenen Masche ergibt null.</button>
+      <button class="option-btn" onclick="checkMC(1, 3, false)"><span class="opt-label">D</span> Die Spannung an jedem Widerstand ist gleich groß.</button>
+    </div>
+
+    <div class="feedback" id="fb-1"></div>
+    <div class="next-area"><button class="btn" id="next-1" onclick="nextPuzzle(2)" style="display:none">Weiter →</button></div>
+  </div>
+
+  <!-- ─── RÄTSEL 3: Knotenregel Rechnen ─── -->
+  <div class="puzzle-card" id="p2">
+    <div class="kirchhoff-badge">⚡ 1. Kirchhoffsches Gesetz</div>
+    <div class="puzzle-number">Rätsel 3 von 5</div>
+    <div class="puzzle-title">Knotenregel berechnen – Unbekannter Strom</div>
+
+    <div class="circuit-box">
+      <svg viewBox="0 0 320 180" width="320" height="180" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#00d4ff"/></marker>
+          <marker id="a2" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#ff6b35"/></marker>
+          <marker id="a3" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#00ff88"/></marker>
+          <marker id="a4" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#ffd700"/></marker>
+        </defs>
+        <!-- Center node -->
+        <circle cx="160" cy="90" r="7" fill="#00d4ff"/>
+        <!-- 4 branches -->
+        <line x1="60" y1="90" x2="153" y2="90" stroke="#00d4ff" stroke-width="2" marker-end="url(#a1)"/>
+        <line x1="260" y1="90" x2="167" y2="90" stroke="#ff6b35" stroke-width="2" marker-end="url(#a2)"/>
+        <line x1="160" y1="40" x2="160" y2="83" stroke="#00ff88" stroke-width="2" marker-end="url(#a3)"/>
+        <line x1="160" y1="97" x2="160" y2="155" stroke="#ffd700" stroke-width="2" marker-end="url(#a4)"/>
+        <!-- Labels -->
+        <text x="95" y="78" fill="#00d4ff" font-size="11" font-family="Share Tech Mono,monospace" text-anchor="middle">I₁=8A →</text>
+        <text x="220" y="78" fill="#ff6b35" font-size="11" font-family="Share Tech Mono,monospace" text-anchor="middle">← I₂=3A</text>
+        <text x="190" y="65" fill="#00ff88" font-size="11" font-family="Share Tech Mono,monospace">I₃=2A ↓</text>
+        <text x="185" y="140" fill="#ffd700" font-size="11" font-family="Share Tech Mono,monospace">I₄=? ↓</text>
+        <text x="160" y="18" fill="#4a6a8a" font-size="11" font-family="Share Tech Mono,monospace" text-anchor="middle">Knoten K</text>
+      </svg>
+    </div>
+
+    <table class="val-table">
+      <tr><th>Strom</th><th>Richtung</th><th>Wert</th></tr>
+      <tr><td>I₁</td><td>→ hinein</td><td>8 A</td></tr>
+      <tr><td>I₂</td><td>← heraus</td><td>3 A</td></tr>
+      <tr><td>I₃</td><td>↓ hinein</td><td>2 A</td></tr>
+      <tr><td>I₄</td><td>↓ heraus</td><td>?</td></tr>
+    </table>
+
+    <div class="formula-box">
+      ΣI<sub>ein</sub> = ΣI<sub>aus</sub>
+      <small>I₁ + I₃ = I₂ + I₄ → I₄ = ?</small>
+    </div>
+
+    <div class="tip-box">Addiere alle einfließenden Ströme und subtrahiere die bekannten abfließenden Ströme.</div>
+
+    <div class="input-row">
+      <input class="answer-input" id="inp-2" type="number" placeholder="Ergebnis in A" min="0" max="99">
+      <button class="btn" onclick="checkInput(2, 7, 'A')">Prüfen</button>
+    </div>
+
+    <div class="feedback" id="fb-2"></div>
+    <div class="next-area"><button class="btn" id="next-2" onclick="nextPuzzle(3)" style="display:none">Weiter →</button></div>
+  </div>
+
+  <!-- ─── RÄTSEL 4: Maschenregel Rechnen ─── -->
+  <div class="puzzle-card" id="p3">
+    <div class="kirchhoff-badge" style="background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.3);color:var(--accent)">🔁 2. Kirchhoffsches Gesetz</div>
+    <div class="puzzle-number">Rätsel 4 von 5</div>
+    <div class="puzzle-title">Maschenregel – Unbekannte Spannung berechnen</div>
+
+    <div class="circuit-box">
+      <svg viewBox="0 0 340 180" width="340" height="180" xmlns="http://www.w3.org/2000/svg">
+        <!-- Circuit rectangle -->
+        <rect x="30" y="20" width="280" height="140" rx="4" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+        <!-- Battery (left side) -->
+        <text x="8" y="82" fill="#00ff88" font-size="10" font-family="Share Tech Mono,monospace">U₀</text>
+        <text x="5" y="95" fill="#00ff88" font-size="10" font-family="Share Tech Mono,monospace">20V</text>
+        <line x1="30" y1="55" x2="30" y2="70" stroke="#00ff88" stroke-width="3"/>
+        <line x1="30" y1="110" x2="30" y2="125" stroke="#00ff88" stroke-width="3"/>
+        <line x1="20" y1="70" x2="40" y2="70" stroke="#00ff88" stroke-width="2"/>
+        <line x1="25" y1="80" x2="35" y2="80" stroke="#00ff88" stroke-width="1.5"/>
+        <line x1="20" y1="90" x2="40" y2="90" stroke="#00ff88" stroke-width="1.5"/>
+        <line x1="25" y1="100" x2="35" y2="100" stroke="#00ff88" stroke-width="1"/>
+        <!-- R1 top -->
+        <rect x="90" y="12" width="60" height="16" rx="3" fill="#1e3a5f" stroke="#00d4ff" stroke-width="1"/>
+        <text x="120" y="23" fill="#00d4ff" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="middle">R₁ → U₁=8V</text>
+        <!-- R2 right -->
+        <rect x="302" y="60" width="16" height="60" rx="3" fill="#1e3a5f" stroke="#ff6b35" stroke-width="1"/>
+        <text x="330" y="88" fill="#ff6b35" font-size="10" font-family="Share Tech Mono,monospace">U₂=?</text>
+        <!-- R3 bottom -->
+        <rect x="140" y="152" width="60" height="16" rx="3" fill="#1e3a5f" stroke="#ffd700" stroke-width="1"/>
+        <text x="170" y="163" fill="#ffd700" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="middle">R₃ → U₃=5V</text>
+        <!-- Arrow direction -->
+        <defs>
+          <marker id="a5" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fff"/></marker>
+        </defs>
+        <path d="M200,90 Q170,90 155,90" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-dasharray="3,3" fill="none"/>
+        <text x="170" y="108" fill="rgba(255,255,255,0.3)" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="middle">↺ Masche</text>
+      </svg>
+    </div>
+
+    <div class="info-box">
+      In einer Masche gilt: <strong>U₀ = U₁ + U₂ + U₃</strong><br>
+      Die Quellenspannung teilt sich auf alle Widerstände auf.
+    </div>
+
+    <table class="val-table">
+      <tr><th>Spannung</th><th>Wert</th></tr>
+      <tr><td>Quellenspannung U₀</td><td>20 V</td></tr>
+      <tr><td>Spannung U₁ an R₁</td><td>8 V</td></tr>
+      <tr><td>Spannung U₂ an R₂</td><td><strong style="color:var(--accent)">?</strong></td></tr>
+      <tr><td>Spannung U₃ an R₃</td><td>5 V</td></tr>
+    </table>
+
+    <div class="formula-box">
+      U₀ − U₁ − U₂ − U₃ = 0
+      <small>20 V − 8 V − U₂ − 5 V = 0 → U₂ = ?</small>
+    </div>
+
+    <div class="input-row">
+      <input class="answer-input" id="inp-3" type="number" placeholder="Ergebnis in V" min="0" max="99">
+      <button class="btn" onclick="checkInput(3, 7, 'V')">Prüfen</button>
+    </div>
+
+    <div class="feedback" id="fb-3"></div>
+    <div class="next-area"><button class="btn" id="next-3" onclick="nextPuzzle(4)" style="display:none">Weiter →</button></div>
+  </div>
+
+  <!-- ─── RÄTSEL 5: Code-Kombination ─── -->
+  <div class="puzzle-card" id="p4">
+    <div class="kirchhoff-badge" style="background:rgba(255,215,0,0.08);border-color:rgba(255,215,0,0.3);color:var(--gold)">🔒 Code-Schloss</div>
+    <div class="puzzle-number">Rätsel 5 von 5</div>
+    <div class="puzzle-title">Das Code-Schloss – Kombiniere dein Wissen!</div>
+
+    <div class="info-box">
+      Du hast beide Kirchhoffschen Gesetze gemeistert. Jetzt musst du zwei letzte Berechnungen lösen, um den <strong>4-stelligen Code</strong> zusammenzusetzen.
+    </div>
+
+    <div style="background:#060c18;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
+      <p style="color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">▸ Schritt 1: Knotenregel</p>
+      <p style="font-size:0.9rem;margin-bottom:12px;color:var(--text)">
+        In Knoten K₁ fließen ein: I₁ = 12 A, I₂ = 6 A.<br>
+        Heraus fließt nur I₃.<br>
+        <strong style="color:#fff">Wie groß ist I₃?</strong> → Die ersten <strong style="color:var(--gold)">zwei Ziffern</strong> des Codes = I₃ in A (z.B. 18 → Code beginnt mit 1 8)
+      </p>
+      <div class="formula-box" style="font-size:0.85rem;margin-bottom:10px;">
+        I₃ = I₁ + I₂ = 12 A + 6 A = <span style="color:var(--gold)">__ __</span>
+      </div>
+    </div>
+
+    <div style="background:#060c18;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
+      <p style="color:var(--accent2);font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">▸ Schritt 2: Maschenregel</p>
+      <p style="font-size:0.9rem;margin-bottom:12px;color:var(--text)">
+        In einer Masche: U₀ = 30 V, U₁ = 12 V, U₂ = 9 V.<br>
+        <strong style="color:#fff">Wie groß ist U₃?</strong> → Die letzten <strong style="color:var(--gold)">zwei Ziffern</strong> des Codes = U₃ in V (z.B. 09 → Code endet mit 0 9)
+      </p>
+      <div class="formula-box" style="font-size:0.85rem;margin-bottom:10px;">
+        U₃ = U₀ − U₁ − U₂ = 30 − 12 − 9 = <span style="color:var(--gold)">__ __</span>
+      </div>
+    </div>
+
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:14px;">Gib den 4-stelligen Code ein (Beispiel: 1809 für I₃=18 und U₃=09):</p>
+
+    <div class="input-row">
+      <input class="answer-input" id="inp-4" type="text" placeholder="4-stelliger Code" maxlength="4" style="letter-spacing:0.3em;font-size:1.3rem;text-align:center">
+      <button class="btn" onclick="checkCode()">🔓 Öffnen</button>
+    </div>
+
+    <div class="feedback" id="fb-4"></div>
+  </div>
+
+  <!-- Final Screen -->
+  <div id="final-screen">
+    <div class="unlock-icon">🏆</div>
+    <div class="unlock-title">Schloss geöffnet!</div>
+    <div class="unlock-sub">Du hast beide Kirchhoffschen Gesetze gemeistert und das Exit Game bestanden!</div>
+    <div class="final-code" id="final-code-display">1809</div>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:28px;">
+      ✅ 1. Kirchhoffsches Gesetz: ΣI<sub>ein</sub> = ΣI<sub>aus</sub><br>
+      ✅ 2. Kirchhoffsches Gesetz: ΣU = 0 (in einer Masche)
+    </p>
+    <button class="btn" onclick="restartGame()" style="margin-right:10px">↺ Nochmal spielen</button>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen">
+    <div class="gameover-icon">💀</div>
+    <div class="gameover-title">Alle Leben verloren!</div>
+    <div class="gameover-sub">Du hast alle 3 Leben verbraucht. Versuche es nochmal – diesmal schaffst du es!</div>
+    <button class="btn" onclick="restartGame()">↺ Neu starten</button>
+  </div>
+
+</div>
+
+<script>
+  let lives = 3;
+  let currentPuzzle = 0;
+  const TOTAL = 5;
+  const FINAL_CODE = "1809";
+
+  function updateHearts() {
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById('h' + i).classList.toggle('dead', i > lives);
+    }
+  }
+
+  function loseLife() {
+    lives--;
+    updateHearts();
+    if (lives <= 0) {
+      setTimeout(() => {
+        document.querySelectorAll('.puzzle-card').forEach(c => c.classList.remove('active'));
+        document.getElementById('gameover-screen').classList.add('show');
+      }, 800);
+    }
+  }
+
+  function showFeedback(id, msg, type) {
+    const fb = document.getElementById('fb-' + id);
+    fb.textContent = msg;
+    fb.className = 'feedback show ' + type;
+  }
+
+  function disableOptions(idx) {
+    document.querySelectorAll('#opts-' + idx + ' .option-btn').forEach(b => b.disabled = true);
+  }
+
+  function checkMC(puzzleIdx, optIdx, isCorrect) {
+    const opts = document.querySelectorAll('#opts-' + puzzleIdx + ' .option-btn');
+    disableOptions(puzzleIdx);
+    opts[optIdx].classList.add(isCorrect ? 'correct' : 'wrong');
+    if (isCorrect) {
+      showFeedback(puzzleIdx, '✅ Richtig! ' + getCorrectMsg(puzzleIdx), 'success');
+      document.getElementById('next-' + puzzleIdx).style.display = 'inline-block';
+    } else {
+      // Show correct answer
+      opts.forEach((btn, i) => { if (btn.onclick.toString().includes('true')) btn.classList.add('correct'); });
+      showFeedback(puzzleIdx, '❌ Leider falsch. ' + getWrongMsg(puzzleIdx), 'error');
+      loseLife();
+      setTimeout(() => { if (lives > 0) document.getElementById('next-' + puzzleIdx).style.display = 'inline-block'; }, 800);
+    }
+  }
+
+  function checkInput(puzzleIdx, correctVal, unit) {
+    const inp = document.getElementById('inp-' + puzzleIdx);
+    const val = parseFloat(inp.value);
+    if (val === correctVal) {
+      showFeedback(puzzleIdx, '✅ Richtig! ' + getCorrectMsg(puzzleIdx), 'success');
+      inp.disabled = true;
+      inp.nextElementSibling.disabled = true;
+      document.getElementById('next-' + puzzleIdx).style.display = 'inline-block';
+    } else {
+      showFeedback(puzzleIdx, '❌ Falsch. ' + getWrongMsg(puzzleIdx), 'error');
+      loseLife();
+      if (lives <= 0) return;
+    }
+  }
+
+  function checkCode() {
+    const inp = document.getElementById('inp-4');
+    const val = inp.value.trim();
+    if (val === FINAL_CODE) {
+      showFeedback(4, '✅ Code korrekt! Das Schloss öffnet sich...', 'success');
+      inp.disabled = true;
+      inp.nextElementSibling.disabled = true;
+      setTimeout(() => {
+        document.getElementById('p4').classList.remove('active');
+        const fs = document.getElementById('final-screen');
+        fs.classList.add('show');
+        document.getElementById('final-code-display').textContent = FINAL_CODE;
+        confetti();
+      }, 800);
+    } else {
+      showFeedback(4, '❌ Falscher Code. Rechne nochmal nach!', 'error');
+      loseLife();
+    }
+  }
+
+  function nextPuzzle(idx) {
+    document.getElementById('p' + (idx - 1)).classList.remove('active');
+    if (idx < TOTAL) {
+      document.getElementById('p' + idx).classList.add('active');
+      currentPuzzle = idx;
+      updateProgress();
+    }
+  }
+
+  function updateProgress() {
+    for (let i = 0; i < TOTAL; i++) {
+      const dot = document.getElementById('pd' + i);
+      dot.className = 'progress-dot';
+      if (i < currentPuzzle) dot.classList.add('done');
+      else if (i === currentPuzzle) dot.classList.add('active');
+    }
+    document.getElementById('puzzle-counter').textContent = (currentPuzzle + 1) + ' / ' + TOTAL;
+  }
+
+  function restartGame() {
+    lives = 3; currentPuzzle = 0;
+    updateHearts();
+    updateProgress();
+    document.querySelectorAll('.puzzle-card').forEach((c, i) => {
+      c.classList.toggle('active', i === 0);
+    });
+    document.getElementById('final-screen').classList.remove('show');
+    document.getElementById('gameover-screen').classList.remove('show');
+    // Reset all feedbacks + inputs + options
+    for (let i = 0; i < TOTAL; i++) {
+      const fb = document.getElementById('fb-' + i);
+      if (fb) { fb.className = 'feedback'; fb.textContent = ''; }
+      const nxt = document.getElementById('next-' + i);
+      if (nxt) nxt.style.display = 'none';
+      const inp = document.getElementById('inp-' + i);
+      if (inp) { inp.value = ''; inp.disabled = false; if (inp.nextElementSibling) inp.nextElementSibling.disabled = false; }
+      const opts = document.querySelectorAll('#opts-' + i + ' .option-btn');
+      opts.forEach(b => { b.disabled = false; b.classList.remove('correct', 'wrong'); });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function getCorrectMsg(idx) {
+    const msgs = [
+      'Knotenregel: I₁ = I₂ + I₃ → I₂ = 5 − 2 = 3 A.',
+      'Das 2. Kirchhoffsche Gesetz (Maschenregel/KVL) besagt genau das!',
+      'Super gerechnet! I₄ = I₁ + I₃ − I₂ = 8 + 2 − 3 = 7 A.',
+      'Korrekt! U₂ = 20 − 8 − 5 = 7 V.',
+      ''
+    ];
+    return msgs[idx] || '';
+  }
+
+  function getWrongMsg(idx) {
+    const msgs = [
+      'Tipp: ΣI_ein = ΣI_aus → 5 A = I₂ + 2 A → I₂ = 3 A.',
+      'Lies die Maschenregel noch einmal durch.',
+      'Tipp: I₁ + I₃ = I₂ + I₄ → 8 + 2 = 3 + I₄ → I₄ = 7 A.',
+      'Tipp: U₀ = U₁ + U₂ + U₃ → 20 = 8 + U₂ + 5 → U₂ = 7 V.',
+      'Rechne beide Schritte nochmals durch.'
+    ];
+    return msgs[idx] || '';
+  }
+
+  function confetti() {
+    const colors = ['#00d4ff', '#00ff88', '#ffd700', '#ff6b35', '#fff'];
+    for (let i = 0; i < 60; i++) {
+      const el = document.createElement('div');
+      el.style.cssText = `position:fixed;width:8px;height:8px;background:${colors[Math.floor(Math.random()*colors.length)]};
+        left:${Math.random()*100}vw;top:-10px;border-radius:50%;z-index:9999;
+        animation:fall ${1+Math.random()*2}s linear forwards;opacity:0.9;`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+    const style = document.createElement('style');
+    style.textContent = '@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}';
+    document.head.appendChild(style);
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
