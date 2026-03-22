@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Game – Geheimlabor der Wärme</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --panel: #111827;
+    --panel2: #1a2235;
+    --accent: #ff6b1a;
+    --accent2: #00d4ff;
+    --warn: #ff3a3a;
+    --success: #00ff88;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --border: #2d3748;
+    --glow-orange: 0 0 20px rgba(255,107,26,0.5);
+    --glow-blue: 0 0 20px rgba(0,212,255,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+
+  /* ===== HEADER ===== */
+  .game-header {
+    text-align: center;
+    padding: 40px 0 30px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .game-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 20%;
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .lab-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(22px, 5vw, 38px);
+    font-weight: 900;
+    color: var(--text);
+    text-shadow: var(--glow-orange);
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* ===== TIMER & PROGRESS ===== */
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 28px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .timer-box {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent2);
+    text-shadow: var(--glow-blue);
+    min-width: 90px;
+  }
+  .timer-box.warn { color: var(--warn); text-shadow: 0 0 16px rgba(255,58,58,0.6); animation: blink 0.8s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  .progress-wrap { flex: 1; min-width: 160px; }
+  .progress-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    box-shadow: var(--glow-blue);
+  }
+
+  .score-box {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    color: var(--success);
+    text-shadow: 0 0 14px rgba(0,255,136,0.5);
+    white-space: nowrap;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; animation: fadeIn 0.4s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  /* ===== INTRO ===== */
+  .intro-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .intro-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .intro-card h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .intro-card p {
+    color: #b0bec5;
+    margin-bottom: 16px;
+  }
+  .mission-list {
+    list-style: none;
+    margin: 20px 0 30px;
+  }
+  .mission-list li {
+    padding: 10px 0 10px 28px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 15px;
+  }
+  .mission-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--accent2);
+  }
+  .mission-list li strong { color: var(--accent); font-weight: 700; }
+
+  /* ===== PUZZLE CARD ===== */
+  .puzzle-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 30px 28px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .puzzle-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+  }
+
+  .puzzle-tag {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-bottom: 14px;
+    background: rgba(0,212,255,0.1);
+    color: var(--accent2);
+    border: 1px solid rgba(0,212,255,0.3);
+    text-transform: uppercase;
+  }
+
+  .puzzle-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 17px;
+    color: var(--text);
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+
+  .puzzle-scenario {
+    background: var(--panel2);
+    border-left: 3px solid var(--accent);
+    padding: 16px 18px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 22px;
+    font-size: 15px;
+    color: #cbd5e1;
+  }
+  .puzzle-scenario strong { color: var(--accent); }
+
+  /* ===== QUESTION ===== */
+  .question-block { margin-bottom: 24px; }
+  .question-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  .answers {
+    display: grid;
+    gap: 10px;
+  }
+  .answer-btn {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 18px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--accent2);
+    background: rgba(0,212,255,0.08);
+    color: #fff;
+    transform: translateX(3px);
+  }
+  .answer-btn.correct {
+    border-color: var(--success);
+    background: rgba(0,255,136,0.1);
+    color: var(--success);
+  }
+  .answer-btn.wrong {
+    border-color: var(--warn);
+    background: rgba(255,58,58,0.1);
+    color: var(--warn);
+  }
+  .answer-btn:disabled { cursor: default; }
+  .answer-btn .indicator {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .answer-btn.correct .indicator,
+  .answer-btn.wrong .indicator { opacity: 1; }
+
+  /* ===== INPUT PUZZLE ===== */
+  .input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .code-input {
+    background: var(--panel2);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    color: var(--accent2);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    padding: 10px 16px;
+    width: 130px;
+    text-align: center;
+    outline: none;
+    letter-spacing: 3px;
+    transition: border-color 0.2s;
+  }
+  .code-input:focus { border-color: var(--accent2); box-shadow: var(--glow-blue); }
+  .code-input.correct-input { border-color: var(--success); color: var(--success); }
+  .code-input.wrong-input { border-color: var(--warn); color: var(--warn); animation: shake 0.4s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  /* ===== FEEDBACK ===== */
+  .feedback-box {
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-top: 14px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-box.correct-fb {
+    background: rgba(0,255,136,0.08);
+    border: 1px solid rgba(0,255,136,0.4);
+    color: var(--success);
+  }
+  .feedback-box.wrong-fb {
+    background: rgba(255,58,58,0.08);
+    border: 1px solid rgba(255,58,58,0.4);
+    color: #ff7c7c;
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-block;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 13px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: var(--glow-orange);
+  }
+  .btn-primary:hover { background: #ff8c45; transform: translateY(-2px); box-shadow: 0 0 30px rgba(255,107,26,0.7); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+  .btn-secondary:hover { background: rgba(0,212,255,0.1); transform: translateY(-2px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+
+  /* ===== VISUAL AIDS ===== */
+  .visual-aid {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 22px;
+    text-align: center;
+    position: relative;
+  }
+  .visual-aid svg { max-width: 100%; }
+
+  /* House diagram */
+  .house-diagram {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 10px 0;
+  }
+  .heat-method {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+    flex: 1;
+    min-width: 130px;
+    max-width: 180px;
+  }
+  .heat-icon { font-size: 32px; margin-bottom: 8px; }
+  .heat-label { font-size: 13px; font-weight: 700; color: var(--accent2); font-family: 'Share Tech Mono', monospace; }
+  .heat-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Mixing diagram */
+  .mix-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+  }
+  .beaker {
+    border: 2px solid;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    width: 70px;
+    height: 80px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+  .beaker.hot { border-color: #ff6b1a; }
+  .beaker.cold { border-color: #00d4ff; }
+  .beaker.mixed { border-color: #a855f7; }
+  .beaker-fill { width: 100%; }
+  .beaker.hot .beaker-fill { background: rgba(255,107,26,0.5); height: 70%; }
+  .beaker.cold .beaker-fill { background: rgba(0,212,255,0.4); height: 70%; }
+  .beaker.mixed .beaker-fill { background: rgba(168,85,247,0.4); height: 70%; }
+  .beaker-label { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; font-family: 'Share Tech Mono', monospace; }
+  .beaker-temp { font-size: 18px; font-weight: 900; font-family: 'Orbitron', sans-serif; }
+  .plus-sign { font-size: 28px; color: var(--muted); font-weight: 700; }
+  .arrow-sign { font-size: 24px; color: var(--accent); }
+  .question-mark { font-size: 32px; font-family: 'Orbitron', sans-serif; }
+
+  /* ===== COMPLETION ===== */
+  .completion-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 36px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .completion-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent2), var(--success), var(--accent));
+    animation: shimmer 2s linear infinite;
+  }
+  @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+
+  .big-icon { font-size: 64px; margin-bottom: 20px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+  .completion-card h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: var(--success);
+    margin-bottom: 12px;
+    text-shadow: 0 0 20px rgba(0,255,136,0.5);
+  }
+  .completion-card p { color: #b0bec5; font-size: 16px; margin-bottom: 8px; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 30px 0;
+  }
+  .stat-box {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 10px;
+  }
+  .stat-val {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow-orange);
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: 'Share Tech Mono', monospace; }
+
+  /* Summary blocks */
+  .summary-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+    text-align: left;
+  }
+  .summary-item {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .summary-icon { font-size: 24px; flex-shrink: 0; }
+  .summary-text h4 { font-size: 14px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; }
+  .summary-text p { font-size: 13px; color: #94a3b8; line-height: 1.5; }
+
+  /* ===== STEP INDICATOR ===== */
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .step-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.3s;
+    position: relative;
+  }
+  .step-dot.active {
+    background: var(--accent2);
+    box-shadow: 0 0 10px rgba(0,212,255,0.6);
+  }
+  .step-dot.done { background: var(--success); }
+
+  /* ===== HINT ===== */
+  .hint-box {
+    background: rgba(255,107,26,0.07);
+    border: 1px solid rgba(255,107,26,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 12px;
+    display: none;
+    font-size: 14px;
+    color: #ffb085;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .hint-box.show { display: block; }
+
+  /* Responsive */
+  @media (max-width: 540px) {
+    .puzzle-card { padding: 22px 18px; }
+    .stat-grid { grid-template-columns: repeat(2,1fr); }
+    .hud { gap: 10px; }
+    .intro-card { padding: 28px 20px; }
+    .completion-card { padding: 36px 20px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="game-header">
+    <div class="lab-label">🔬 Physik · Wärmelehre · 2BFS Baden-Württemberg</div>
+    <h1>Geheimlabor <span>der Wärme</span></h1>
+    <div class="subtitle">EXIT GAME // MISSION: REACTOR COOLDOWN</div>
+  </header>
+
+  <!-- HUD -->
+  <div class="hud" id="hud">
+    <div class="timer-box" id="timer">20:00</div>
+    <div class="progress-wrap">
+      <div class="progress-label">FORTSCHRITT</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="score-box" id="score-display">⭐ 0 Punkte</div>
+  </div>
+
+  <!-- SCREENS -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-card">
+      <h2>🚨 Notfall im Wärmelabor!</h2>
+      <p>Du bist Technikerin/Techniker im Forschungslabor „ThermaTech". Ein Fehler im Kühlsystem hat den Reaktor überhitzt. Nur wer die Gesetze der Wärmelehre kennt, kann das System korrekt zurücksetzen.</p>
+      <p>Löse alle vier Rätsel, um den <strong>Freigabe-Code</strong> einzugeben und das Labor zu retten!</p>
+      <ul class="mission-list">
+        <li><strong>Rätsel 1:</strong> Wärmeleitung – Wie fließt Wärme durch Stoffe?</li>
+        <li><strong>Rätsel 2:</strong> Konvektion – Wie bewegt sich Wärme in Flüssigkeiten und Gasen?</li>
+        <li><strong>Rätsel 3:</strong> Wärmestrahlung – Wärme ohne Kontakt</li>
+        <li><strong>Rätsel 4:</strong> Mischen – Temperaturausgleich berechnen</li>
+      </ul>
+      <p style="font-size:14px;color:var(--muted)">Du hast <strong style="color:var(--accent2)">20 Minuten</strong>. Falsche Antworten kosten Punkte. Viel Erfolg!</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startGame()">🔓 MISSION STARTEN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUZZLE SCREENS -->
+  <div id="screen-puzzles" class="screen">
+    <div class="step-indicator" id="step-indicator"></div>
+    <div id="puzzle-container"></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div id="screen-complete" class="screen">
+    <div class="completion-card">
+      <div class="big-icon">🏆</div>
+      <h2>MISSION ERFOLGREICH!</h2>
+      <p>Du hast das Kühlsystem zurückgesetzt und das Labor gerettet!</p>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="final-score">0</div>
+          <div class="stat-label">PUNKTE</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="final-time">0:00</div>
+          <div class="stat-label">RESTZEIT</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="final-correct">0/8</div>
+          <div class="stat-label">RICHTIG</div>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-icon">🔩</div>
+          <div class="summary-text">
+            <h4>Wärmeleitung (Konduktion)</h4>
+            <p>Wärme wird durch direkten Kontakt von Teilchen zu Teilchen übertragen. Gute Wärmeleiter (Metalle) leiten Wärme schnell; schlechte Leiter (Holz, Luft) wirken als Isolatoren.</p>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">🌊</div>
+          <div class="summary-text">
+            <h4>Konvektion (Wärmeströmung)</h4>
+            <p>Warme Flüssigkeiten/Gase steigen auf, kühle sinken ab – es entstehen Strömungen (Konvektionsströme). Funktioniert nur in Flüssigkeiten und Gasen, nicht im Vakuum.</p>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">☀️</div>
+          <div class="summary-text">
+            <h4>Wärmestrahlung (Radiation)</h4>
+            <p>Wärme wird als elektromagnetische Strahlung (Infrarot) übertragen – auch ohne Materie (Vakuum). Dunkle, matte Flächen strahlen stärker ab und nehmen mehr Strahlung auf.</p>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">🧪</div>
+          <div class="summary-text">
+            <h4>Mischen von Stoffen</h4>
+            <p>Bei gleichem Stoff gilt: T<sub>misch</sub> = (m₁·T₁ + m₂·T₂) / (m₁ + m₂). Wärme geht vom wärmeren zum kälteren Körper über, bis ein Temperaturausgleich erreicht ist.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row" style="justify-content:center;margin-top:30px">
+        <button class="btn btn-primary" onclick="resetGame()">🔄 NOCHMAL SPIELEN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAIL SCREEN -->
+  <div id="screen-fail" class="screen">
+    <div class="completion-card">
+      <div class="big-icon">💥</div>
+      <h2 style="color:var(--warn)">ZEIT ABGELAUFEN!</h2>
+      <p>Das Kühlsystem konnte nicht rechtzeitig zurückgesetzt werden.</p>
+      <p style="margin-top:12px">Doch keine Sorge – im echten Labor gibt es immer eine zweite Chance!</p>
+      <div class="btn-row" style="justify-content:center;margin-top:30px">
+        <button class="btn btn-primary" onclick="resetGame()">🔄 NOCHMAL VERSUCHEN</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =============================================
+// DATA
+// =============================================
+const PUZZLES = [
+  {
+    id: 1,
+    tag: "Modul 1 — Wärmeleitung",
+    title: "🔩 Der defekte Rohrabschnitt",
+    scenario: `Im Kühlsystem ist ein Metallrohr mit einer Holzverbindung kombiniert worden. Die Ingenieurin meldet: <strong>„Ich spüre den Unterschied sofort, wenn ich das Rohr anfasse!"</strong> Bevor der Reset möglich ist, muss das Kühlprinzip verstanden werden.`,
+    questions: [
+      {
+        q: "Warum fühlt sich ein Metallstab bei gleicher Raumtemperatur kälter an als ein Holzstab?",
+        type: "mc",
+        options: [
+          "Metall hat eine niedrigere Temperatur als Holz.",
+          "Metall leitet Wärme viel besser und entzieht der Hand schneller Wärme.",
+          "Holz strahlt mehr Wärme ab als Metall.",
+          "Metall ist schwerer, deshalb fühlt es sich kälter an."
+        ],
+        correct: 1,
+        feedback_correct: "✅ Genau! Metalle sind gute Wärmeleiter. Sie leiten die Körperwärme schnell ab – deshalb fühlen sie sich kälter an, obwohl beide die gleiche Temperatur haben.",
+        feedback_wrong: "❌ Nicht ganz. Beide Stäbe haben die gleiche Temperatur! Der Unterschied liegt in der Wärmeleitfähigkeit: Metall leitet Wärme viel schneller ab als Holz."
+      },
+      {
+        q: "Welche Aussage über Wärmeleitung ist FALSCH?",
+        type: "mc",
+        options: [
+          "Wärmeleitung findet bei direktem Kontakt zweier Körper statt.",
+          "Wärme fließt stets vom wärmeren zum kälteren Bereich.",
+          "Wärmeleitung in Gasen ist genauso gut wie in Metallen.",
+          "Luft ist ein schlechter Wärmeleiter und wirkt daher isolierend."
+        ],
+        correct: 2,
+        feedback_correct: "✅ Richtig erkannt! Gase wie Luft sind sehr schlechte Wärmeleiter – genau deshalb isolieren Materialien mit vielen Lufteinschlüssen (z.B. Wolle, Styropor) so gut.",
+        feedback_wrong: "❌ Überleg nochmal: Gase leiten Wärme kaum. Luft ist ein sehr schlechter Wärmeleiter – viel schlechter als Metalle. Das nutzen wir z.B. bei Doppelscheiben."
+      }
+    ]
+  },
+  {
+    id: 2,
+    tag: "Modul 2 — Konvektion",
+    title: "🌊 Das Kühlmittel zirkuliert nicht",
+    scenario: `Das flüssige Kühlmittel bewegt sich nicht mehr durch das System. Eine Kollegin fragt: <strong>„Verstehst du, wie das Kühlmittel normalerweise fließt – ohne Pumpe?"</strong> Du musst das Prinzip erklären, um die Zirkulation manuell neu zu starten.`,
+    questions: [
+      {
+        q: "Warum steigt warmes Wasser (oder warme Luft) nach oben?",
+        type: "mc",
+        options: [
+          "Weil Wärme eine nach oben gerichtete Kraft erzeugt.",
+          "Weil warme Flüssigkeiten/Gase eine geringere Dichte haben und deshalb auftreiben.",
+          "Weil kalte Luft wärmer ist und deshalb aufsteigt.",
+          "Weil elektrische Ladungen warme Teilchen nach oben drücken."
+        ],
+        correct: 1,
+        feedback_correct: "✅ Perfekt! Erwärmte Flüssigkeiten und Gase dehnen sich aus → Dichte nimmt ab → sie steigen auf. Kältere, dichtere Bereiche sinken ab. So entsteht der Konvektionsstrom.",
+        feedback_wrong: "❌ Denk an die Dichte: Warme Flüssigkeiten/Gase haben eine geringere Dichte als kalte. Daher treiben sie auf (Auftrieb) – ähnlich wie Öl auf Wasser."
+      },
+      {
+        q: "In welchem Medium funktioniert Konvektion NICHT?",
+        type: "mc",
+        options: [
+          "In Wasser",
+          "In Luft",
+          "Im Vakuum (luftleerer Raum)",
+          "In Öl"
+        ],
+        correct: 2,
+        feedback_correct: "✅ Korrekt! Im Vakuum gibt es keine Teilchen, die sich bewegen können. Konvektion braucht strömungsfähige Materie (Flüssigkeiten oder Gase). Deshalb überträgt die Sonne ihre Wärme nicht per Konvektion zur Erde.",
+        feedback_wrong: "❌ Konvektion benötigt Materie, die strömen kann – also Flüssigkeiten oder Gase. Im Vakuum gibt es keine Teilchen, deshalb ist Konvektion dort unmöglich."
+      }
+    ]
+  },
+  {
+    id: 3,
+    tag: "Modul 3 — Wärmestrahlung",
+    title: "☀️ Der Sensor ist überhitzt",
+    scenario: `Ein Sensor im Labor hat sich durch <strong>Wärmestrahlung</strong> überhitzt – obwohl er keinen direkten Kontakt zu heißen Teilen hatte. „Wie ist das möglich?", fragt der Sicherheitsbeauftragte. Erkläre das Prinzip der Wärmestrahlung.`,
+    questions: [
+      {
+        q: "Welche Aussage über Wärmestrahlung ist korrekt?",
+        type: "mc",
+        options: [
+          "Wärmestrahlung benötigt immer ein Medium (Stoff) zur Übertragung.",
+          "Wärmestrahlung ist eine elektromagnetische Strahlung und kann sich auch im Vakuum ausbreiten.",
+          "Wärmestrahlung funktioniert nur bei sehr hohen Temperaturen (über 1000 °C).",
+          "Dunkle Oberflächen reflektieren Wärmestrahlung besser als helle."
+        ],
+        correct: 1,
+        feedback_correct: "✅ Sehr gut! Wärmestrahlung (Infrarotstrahlung) ist elektromagnetische Strahlung – sie braucht kein Medium und kann das Vakuum des Weltalls durchqueren. So erreicht uns die Sonnenwärme!",
+        feedback_wrong: "❌ Wärmestrahlung ist eine elektromagnetische Welle (Infrarot). Sie kann sich im Vakuum ausbreiten – das ist der entscheidende Unterschied zu Leitung und Konvektion."
+      },
+      {
+        q: "Welche Oberfläche nimmt Wärmestrahlung am besten auf?",
+        type: "mc",
+        options: [
+          "Glänzend-weiß",
+          "Silbern poliert",
+          "Matt-schwarz",
+          "Hellblau glänzend"
+        ],
+        correct: 2,
+        feedback_correct: "✅ Richtig! Dunkle, matte Oberflächen absorbieren Strahlung am besten (und geben sie auch am besten ab). Helle, glänzende Flächen dagegen reflektieren – deshalb sind Thermokannen innen versilbert.",
+        feedback_wrong: "❌ Matt-schwarze Oberflächen sind die besten Absorber und Strahler. Helle, glänzende Flächen reflektieren Strahlung und nehmen wenig auf."
+      }
+    ]
+  },
+  {
+    id: 4,
+    tag: "Modul 4 — Mischen & Berechnung",
+    title: "🧪 Temperaturausgleich im Kühlbehälter",
+    scenario: `Um den Reaktor zu kühlen, werden zwei Wassermengen gemischt: <strong>m₁ = 2 kg Wasser bei T₁ = 80 °C</strong> und <strong>m₂ = 2 kg Wasser bei T₂ = 20 °C</strong>. Welche Mischtemperatur entsteht? Gib deinen Ansatz an und löse das Rätsel!`,
+    questions: [
+      {
+        q: "Was beschreibt die Formel zur Mischtemperatur (gleicher Stoff, kein Wärmeverlust)?",
+        type: "mc",
+        options: [
+          "T_misch = T₁ + T₂ (Temperaturen addieren)",
+          "T_misch = (m₁ · T₁ + m₂ · T₂) / (m₁ + m₂)",
+          "T_misch = (T₁ · T₂) / (m₁ + m₂)",
+          "T_misch = (T₁ - T₂) / 2"
+        ],
+        correct: 1,
+        feedback_correct: "✅ Exzellent! Die Mischtemperaturformel beruht auf dem Energieerhaltungssatz: Die vom wärmeren Körper abgegebene Wärme entspricht der vom kälteren aufgenommenen Wärme.",
+        feedback_wrong: "❌ Die korrekte Formel lautet: T_misch = (m₁·T₁ + m₂·T₂) / (m₁+m₂). Sie basiert auf dem Energieerhaltungssatz: Q_abgegeben = Q_aufgenommen."
+      },
+      {
+        q: "Berechne: 2 kg Wasser (80 °C) + 2 kg Wasser (20 °C). Welche Mischtemperatur entsteht?",
+        type: "input",
+        unit: "°C",
+        correct_value: "50",
+        tolerance: 1,
+        hint: "Hinweis: T_misch = (m₁·T₁ + m₂·T₂) / (m₁+m₂) = (2·80 + 2·20) / (2+2) = ?",
+        feedback_correct: "✅ Perfekt gerechnet! T_misch = (2·80 + 2·20)/(2+2) = (160+40)/4 = 200/4 = 50 °C. Bei gleichen Massen liegt die Mischtemperatur genau in der Mitte!",
+        feedback_wrong: "❌ Rechne schrittweise: Zähler = (2·80) + (2·20) = 160 + 40 = 200. Nenner = 2+2 = 4. T_misch = 200/4 = 50 °C."
+      }
+    ]
+  }
+];
+
+// =============================================
+// GAME STATE
+// =============================================
+let state = {
+  currentPuzzle: 0,
+  currentQuestion: 0,
+  score: 0,
+  correctAnswers: 0,
+  totalQuestions: 0,
+  timerInterval: null,
+  timeLeft: 20 * 60,
+  answered: false,
+  puzzlesDone: [],
+  hintUsed: false,
+  attempts: 0,
+  gameStarted: false
+};
+
+// Count total questions
+PUZZLES.forEach(p => { state.totalQuestions += p.questions.length; });
+
+// =============================================
+// TIMER
+// =============================================
+function startTimer() {
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    updateTimerDisplay();
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      showScreen('screen-fail');
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const min = Math.floor(state.timeLeft / 60);
+  const sec = state.timeLeft % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  el.className = 'timer-box' + (state.timeLeft < 120 ? ' warn' : '');
+}
+
+function formatTime(secs) {
+  const m = Math.floor(secs/60), s = secs%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// =============================================
+// SCREENS
+// =============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// =============================================
+// START GAME
+// =============================================
+function startGame() {
+  state.gameStarted = true;
+  buildStepIndicator();
+  showScreen('screen-puzzles');
+  startTimer();
+  renderPuzzle();
+}
+
+function buildStepIndicator() {
+  const total = PUZZLES.reduce((a,p) => a + p.questions.length, 0);
+  const container = document.getElementById('step-indicator');
+  container.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'step-dot';
+    d.id = `dot-${i}`;
+    container.appendChild(d);
+  }
+  updateStepIndicator();
+}
+
+function getGlobalQuestionIndex() {
+  let idx = 0;
+  for(let i=0;i<state.currentPuzzle;i++) idx += PUZZLES[i].questions.length;
+  idx += state.currentQuestion;
+  return idx;
+}
+
+function updateStepIndicator() {
+  const globalIdx = getGlobalQuestionIndex();
+  for(let i=0;i<state.totalQuestions;i++){
+    const d = document.getElementById(`dot-${i}`);
+    if(!d) continue;
+    d.className = 'step-dot' + (i < globalIdx ? ' done' : (i === globalIdx ? ' active' : ''));
+  }
+}
+
+function updateHUD() {
+  const pct = (getGlobalQuestionIndex() / state.totalQuestions) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('score-display').textContent = `⭐ ${state.score} Punkte`;
+}
+
+// =============================================
+// RENDER PUZZLE
+// =============================================
+function renderPuzzle() {
+  state.answered = false;
+  state.hintUsed = false;
+  state.attempts = 0;
+  updateStepIndicator();
+  updateHUD();
+
+  const puzzle = PUZZLES[state.currentPuzzle];
+  const question = puzzle.questions[state.currentQuestion];
+  const isFirst = state.currentQuestion === 0;
+
+  let html = `
+    <div class="puzzle-card">
+      <div class="puzzle-tag">${puzzle.tag}</div>
+      ${isFirst ? `
+        <div class="puzzle-title">${puzzle.title}</div>
+        <div class="puzzle-scenario">${puzzle.scenario}</div>
+      ` : `<div class="puzzle-title">${puzzle.title} — Frage ${state.currentQuestion+1}</div>`}
+
+      ${state.currentPuzzle === 3 && state.currentQuestion === 1 ? renderMixDiagram() : ''}
+      ${state.currentPuzzle === 0 ? renderHeatMethodsHint() : ''}
+
+      <div class="question-block">
+        <div class="question-text">${question.q}</div>
+  `;
+
+  if(question.type === 'mc') {
+    html += `<div class="answers" id="answers">`;
+    question.options.forEach((opt, i) => {
+      html += `<button class="answer-btn" onclick="handleMC(${i})" data-idx="${i}">${opt}<span class="indicator" id="ind-${i}"></span></button>`;
+    });
+    html += `</div>`;
+  } else if(question.type === 'input') {
+    html += `
+      <div class="input-group">
+        <input type="number" class="code-input" id="user-input" placeholder="???" step="0.1">
+        <span style="font-family:'Share Tech Mono';color:var(--muted)">${question.unit}</span>
+        <button class="btn btn-secondary" id="check-btn" onclick="handleInput()">PRÜFEN</button>
+      </div>
+      <div class="hint-box" id="hint-box">${question.hint || ''}</div>
+    `;
+  }
+
+  html += `
+      <div class="feedback-box" id="feedback"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="hint-btn" onclick="showHint()" style="display:${question.type==='input'?'inline-block':'none'}">💡 Hinweis (−5 Pkt)</button>
+      <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>WEITER →</button>
+    </div>
+  </div>`;
+
+  document.getElementById('puzzle-container').innerHTML = html;
+
+  // allow enter key for input
+  const inp = document.getElementById('user-input');
+  if(inp) inp.addEventListener('keydown', e => { if(e.key==='Enter') handleInput(); });
+}
+
+function renderMixDiagram() {
+  return `
+  <div class="visual-aid">
+    <div class="mix-diagram">
+      <div>
+        <div class="beaker hot"><div class="beaker-fill"></div></div>
+        <div class="beaker-label">m₁ = 2 kg<br><span class="beaker-temp" style="color:var(--accent)">80 °C</span></div>
+      </div>
+      <div class="plus-sign">+</div>
+      <div>
+        <div class="beaker cold"><div class="beaker-fill"></div></div>
+        <div class="beaker-label">m₂ = 2 kg<br><span class="beaker-temp" style="color:var(--accent2)">20 °C</span></div>
+      </div>
+      <div class="arrow-sign">→</div>
+      <div>
+        <div class="beaker mixed"><div class="beaker-fill"></div></div>
+        <div class="beaker-label">T_misch = ?<br><span class="beaker-temp" style="color:#a855f7">??? °C</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderHeatMethodsHint() {
+  return `
+  <div class="visual-aid" style="margin-bottom:18px">
+    <div class="house-diagram">
+      <div class="heat-method">
+        <div class="heat-icon">🔩</div>
+        <div class="heat-label">Leitung</div>
+        <div class="heat-desc">Fester Kontakt<br>Teilchen zu Teilchen</div>
+      </div>
+      <div class="heat-method">
+        <div class="heat-icon">🌊</div>
+        <div class="heat-label">Konvektion</div>
+        <div class="heat-desc">Strömung<br>Flüssigkeiten & Gase</div>
+      </div>
+      <div class="heat-method">
+        <div class="heat-icon">☀️</div>
+        <div class="heat-label">Strahlung</div>
+        <div class="heat-desc">Elektromagnetisch<br>auch im Vakuum</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// =============================================
+// ANSWER HANDLERS
+// =============================================
+function handleMC(idx) {
+  if(state.answered) return;
+  state.answered = true;
+
+  const question = PUZZLES[state.currentPuzzle].questions[state.currentQuestion];
+  const btns = document.querySelectorAll('.answer-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const isCorrect = idx === question.correct;
+  btns[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  document.getElementById(`ind-${idx}`).textContent = isCorrect ? '✓' : '✗';
+
+  if(!isCorrect) {
+    btns[question.correct].classList.add('correct');
+    document.getElementById(`ind-${question.correct}`).textContent = '✓';
+  }
+
+  if(isCorrect) {
+    state.score += 10;
+    state.correctAnswers++;
+  } else {
+    state.score = Math.max(0, state.score - 3);
+  }
+
+  showFeedback(isCorrect ? question.feedback_correct : question.feedback_wrong, isCorrect);
+  document.getElementById('next-btn').disabled = false;
+  document.getElementById('score-display').textContent = `⭐ ${state.score} Punkte`;
+}
+
+function handleInput() {
+  if(state.answered) return;
+  const question = PUZZLES[state.currentPuzzle].questions[state.currentQuestion];
+  const inp = document.getElementById('user-input');
+  const val = parseFloat(inp.value.replace(',','.'));
+  const correct = parseFloat(question.correct_value);
+  const tol = question.tolerance || 0;
+
+  if(isNaN(val)) { inp.classList.add('wrong-input'); setTimeout(()=>inp.classList.remove('wrong-input'),500); return; }
+
+  state.attempts++;
+  const isCorrect = Math.abs(val - correct) <= tol;
+
+  inp.classList.add(isCorrect ? 'correct-input' : 'wrong-input');
+  setTimeout(()=>{ if(!isCorrect) inp.classList.remove('wrong-input'); }, 500);
+
+  if(isCorrect) {
+    state.answered = true;
+    state.score += state.hintUsed ? 5 : 10;
+    state.correctAnswers++;
+    document.getElementById('check-btn').disabled = true;
+    showFeedback(question.feedback_correct, true);
+    document.getElementById('next-btn').disabled = false;
+  } else {
+    state.score = Math.max(0, state.score - 3);
+    showFeedback(state.attempts >= 2 ? question.feedback_wrong : `❌ Nicht ganz. Versuch nochmal! (Tipp: Nutze die Formel schrittweise.)`, false);
+    if(state.attempts >= 3) {
+      state.answered = true;
+      document.getElementById('check-btn').disabled = true;
+      document.getElementById('next-btn').disabled = false;
+      inp.value = correct;
+      inp.classList.remove('wrong-input');
+      inp.classList.add('correct-input');
+    }
+  }
+  document.getElementById('score-display').textContent = `⭐ ${state.score} Punkte`;
+}
+
+function showHint() {
+  const box = document.getElementById('hint-box');
+  if(box) {
+    box.classList.add('show');
+    if(!state.hintUsed) {
+      state.hintUsed = true;
+      state.score = Math.max(0, state.score - 5);
+      document.getElementById('score-display').textContent = `⭐ ${state.score} Punkte`;
+    }
+    const hintBtn = document.getElementById('hint-btn');
+    if(hintBtn) hintBtn.disabled = true;
+  }
+}
+
+function showFeedback(text, isCorrect) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = '';
+  fb.innerHTML = text;
+  fb.className = 'feedback-box show ' + (isCorrect ? 'correct-fb' : 'wrong-fb');
+}
+
+// =============================================
+// NAVIGATION
+// =============================================
+function nextQuestion() {
+  const puzzle = PUZZLES[state.currentPuzzle];
+  state.currentQuestion++;
+
+  if(state.currentQuestion >= puzzle.questions.length) {
+    state.currentQuestion = 0;
+    state.currentPuzzle++;
+    if(state.currentPuzzle >= PUZZLES.length) {
+      finishGame();
+      return;
+    }
+  }
+
+  renderPuzzle();
+}
+
+// =============================================
+// FINISH
+// =============================================
+function finishGame() {
+  clearInterval(state.timerInterval);
+  const remaining = state.timeLeft;
+  state.score += Math.floor(remaining / 10); // bonus for speed
+
+  document.getElementById('final-score').textContent = state.score;
+  document.getElementById('final-time').textContent = formatTime(remaining);
+  document.getElementById('final-correct').textContent = `${state.correctAnswers}/${state.totalQuestions}`;
+
+  showScreen('screen-complete');
+}
+
+function resetGame() {
+  clearInterval(state.timerInterval);
+  state = {
+    currentPuzzle: 0,
+    currentQuestion: 0,
+    score: 0,
+    correctAnswers: 0,
+    totalQuestions: state.totalQuestions,
+    timerInterval: null,
+    timeLeft: 20*60,
+    answered: false,
+    puzzlesDone: [],
+    hintUsed: false,
+    attempts: 0,
+    gameStarted: false
+  };
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('score-display').textContent = '⭐ 0 Punkte';
+  document.getElementById('timer').textContent = '20:00';
+  document.getElementById('timer').className = 'timer-box';
+  showScreen('screen-intro');
+}
+
+// Init
+updateTimerDisplay();
+</script>
+</body>
+</html>
