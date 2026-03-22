@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhysikHub BW – Deine Lernplattform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3e;
+  --accent: #5b8aff;
+  --accent2: #ff6b6b;
+  --accent3: #43e8c0;
+  --accent4: #ffd166;
+  --text: #e8e8f0;
+  --text-muted: #7878a0;
+  --text-dim: #4a4a68;
+  --radius: 12px;
+  --radius-lg: 20px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== NOISE TEXTURE ===== */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 16px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 8px; }
+.nav-links button {
+  background: none; border: none; color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  padding: 8px 16px; border-radius: 8px; cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-links button:hover, .nav-links button.active {
+  color: var(--text); background: var(--surface2);
+}
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 80px 32px;
+  position: relative;
+}
+.hero-glow {
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(91,138,255,0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 6px 16px; border-radius: 999px;
+  font-size: 12px; color: var(--text-muted); font-family: 'Space Mono', monospace;
+  margin-bottom: 32px;
+  animation: fadeUp 0.6s ease both;
+}
+.hero-badge::before {
+  content: ''; width: 6px; height: 6px;
+  background: var(--accent3); border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(20px); }
+  to { opacity:1; transform: translateY(0); }
+}
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: clamp(40px, 7vw, 80px);
+  line-height: 1.0; letter-spacing: -2px;
+  animation: fadeUp 0.6s 0.1s ease both;
+}
+h1 .highlight { color: var(--accent); }
+h1 .highlight2 { color: var(--accent3); }
+.hero-sub {
+  margin-top: 24px;
+  font-size: 18px; color: var(--text-muted); max-width: 520px;
+  line-height: 1.6;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.hero-cards {
+  display: flex; gap: 16px; margin-top: 48px; flex-wrap: wrap; justify-content: center;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+.hero-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px 28px;
+  text-align: left; cursor: pointer; transition: all 0.25s;
+  width: 200px;
+}
+.hero-card:hover {
+  border-color: var(--accent); transform: translateY(-4px);
+  background: var(--surface2);
+}
+.hero-card .card-icon { font-size: 28px; margin-bottom: 12px; }
+.hero-card .card-title {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
+  margin-bottom: 4px;
+}
+.hero-card .card-count {
+  font-size: 12px; color: var(--text-muted); font-family: 'Space Mono', monospace;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.app {
+  max-width: 1200px; margin: 0 auto;
+  padding: 40px 24px 100px;
+  display: none;
+}
+.app.visible { display: block; }
+
+/* ===== SECTION HEADER ===== */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 32px; padding-top: 32px;
+}
+.section-title {
+  font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+}
+.school-tabs {
+  display: flex; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px;
+}
+.school-tab {
+  padding: 8px 18px; border-radius: 7px; cursor: pointer;
+  font-size: 13px; font-weight: 500; border: none;
+  background: none; color: var(--text-muted);
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+}
+.school-tab.active { background: var(--accent); color: white; }
+
+/* ===== TOPIC GRID ===== */
+.topic-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px; margin-bottom: 48px;
+}
+.topic-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+  cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
+}
+.topic-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.topic-card.blue::before { background: var(--accent); }
+.topic-card.red::before { background: var(--accent2); }
+.topic-card.green::before { background: var(--accent3); }
+.topic-card.yellow::before { background: var(--accent4); }
+
+.topic-card:hover { transform: translateY(-3px); border-color: var(--text-dim); }
+.topic-card.blue:hover { border-color: var(--accent); box-shadow: 0 8px 32px rgba(91,138,255,0.15); }
+.topic-card.red:hover { border-color: var(--accent2); box-shadow: 0 8px 32px rgba(255,107,107,0.15); }
+.topic-card.green:hover { border-color: var(--accent3); box-shadow: 0 8px 32px rgba(67,232,192,0.15); }
+.topic-card.yellow:hover { border-color: var(--accent4); box-shadow: 0 8px 32px rgba(255,209,102,0.15); }
+
+.topic-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.topic-icon { font-size: 24px; }
+.topic-bpe {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--text-muted); padding: 3px 8px;
+  background: var(--surface2); border-radius: 6px;
+  margin-left: auto;
+}
+.topic-name {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px;
+  margin-bottom: 8px; line-height: 1.3;
+}
+.topic-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.topic-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.tag {
+  font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  background: var(--surface2); color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+}
+
+/* ===== MODAL / LESSON VIEW ===== */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); width: 100%; max-width: 780px;
+  max-height: 88vh; overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+@keyframes slideUp {
+  from { opacity:0; transform: translateY(30px); }
+  to { opacity:1; transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface); z-index: 10;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; }
+.modal-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.modal-close {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer; border-radius: 8px;
+  width: 36px; height: 36px; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.modal-close:hover { color: var(--text); border-color: var(--text-dim); }
+
+.modal-tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+}
+.modal-tab {
+  padding: 14px 20px; cursor: pointer;
+  font-size: 14px; font-weight: 500;
+  border: none; background: none; color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  margin-bottom: -1px;
+}
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.modal-body { padding: 28px 32px; }
+
+/* ===== CONTENT SECTIONS ===== */
+.content-section { display: none; }
+.content-section.active { display: block; }
+
+.theory-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px;
+}
+.theory-block h3 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px;
+  margin-bottom: 12px; color: var(--accent);
+}
+.theory-block p { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+.theory-block ul { margin: 10px 0 0 16px; }
+.theory-block li { font-size: 14px; color: var(--text-muted); margin-bottom: 6px; line-height: 1.5; }
+
+.formula-box {
+  background: var(--bg); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent3);
+  border-radius: var(--radius); padding: 16px 20px; margin: 16px 0;
+  font-family: 'Space Mono', monospace; font-size: 14px;
+  color: var(--accent3);
+}
+.formula-label {
+  font-size: 11px; color: var(--text-dim); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ===== QUIZ ===== */
+.quiz-level-tabs {
+  display: flex; gap: 8px; margin-bottom: 24px;
+}
+.level-tab {
+  padding: 8px 18px; border-radius: 999px; cursor: pointer;
+  font-size: 13px; border: 1px solid var(--border);
+  background: none; color: var(--text-muted);
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+}
+.level-tab.afb1.active { background: rgba(67,232,192,0.15); border-color: var(--accent3); color: var(--accent3); }
+.level-tab.afb2.active { background: rgba(91,138,255,0.15); border-color: var(--accent); color: var(--accent); }
+.level-tab.afb3.active { background: rgba(255,107,107,0.15); border-color: var(--accent2); color: var(--accent2); }
+
+.quiz-container { }
+.question-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+  margin-bottom: 16px; animation: fadeUp 0.3s ease both;
+}
+.q-number {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--text-dim); margin-bottom: 10px;
+}
+.q-text {
+  font-size: 15px; line-height: 1.6; margin-bottom: 20px; font-weight: 500;
+}
+.q-options { display: flex; flex-direction: column; gap: 8px; }
+.q-option {
+  padding: 12px 16px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg);
+  cursor: pointer; font-size: 14px; text-align: left;
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+}
+.q-option:hover { border-color: var(--accent); background: rgba(91,138,255,0.08); }
+.q-option.correct { border-color: var(--accent3); background: rgba(67,232,192,0.1); color: var(--accent3); }
+.q-option.wrong { border-color: var(--accent2); background: rgba(255,107,107,0.1); color: var(--accent2); }
+.q-option:disabled { cursor: default; }
+
+.feedback-box {
+  margin-top: 12px; padding: 12px 16px;
+  border-radius: 10px; font-size: 13px; line-height: 1.5;
+  display: none;
+}
+.feedback-box.show { display: block; }
+.feedback-box.correct { background: rgba(67,232,192,0.1); border: 1px solid var(--accent3); color: var(--accent3); }
+.feedback-box.wrong { background: rgba(255,107,107,0.08); border: 1px solid var(--accent2); color: var(--text-muted); }
+.feedback-box.wrong strong { color: var(--accent2); }
+
+.open-question {
+  margin-top: 12px;
+}
+.open-question textarea {
+  width: 100%; min-height: 100px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  resize: vertical; line-height: 1.5;
+  transition: border-color 0.2s;
+}
+.open-question textarea:focus { outline: none; border-color: var(--accent); }
+
+.btn {
+  padding: 10px 22px; border-radius: 10px; cursor: pointer;
+  font-size: 14px; font-weight: 500; border: none;
+  font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #4a7aee; }
+.btn-outline {
+  background: none; border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+
+.quiz-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+/* ===== FORMULA SHEET ===== */
+.formula-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.formula-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px;
+}
+.formula-card-title {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-dim); font-family: 'Space Mono', monospace;
+  margin-bottom: 10px;
+}
+.formula-entry {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.formula-entry:last-child { border-bottom: none; }
+.formula-name { font-size: 13px; color: var(--text-muted); }
+.formula-eq {
+  font-family: 'Space Mono', monospace; font-size: 13px;
+  color: var(--accent3); text-align: right;
+}
+
+/* ===== PROGRESS ===== */
+.progress-bar-wrap {
+  background: var(--surface2); border-radius: 999px; height: 6px;
+  margin-top: 8px; overflow: hidden;
+}
+.progress-bar { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.5s ease; }
+
+/* ===== SCORE ===== */
+.score-display {
+  text-align: center; padding: 24px;
+  background: var(--surface2); border-radius: var(--radius-lg);
+  border: 1px solid var(--border); margin-bottom: 20px;
+}
+.score-number {
+  font-family: 'Syne', sans-serif; font-size: 52px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.score-label { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+/* ===== FOOTER ===== */
+footer {
+  text-align: center; padding: 32px;
+  color: var(--text-dim); font-size: 12px;
+  font-family: 'Space Mono', monospace;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  nav { padding: 12px 16px; }
+  .nav-links { display: none; }
+  .modal-body, .modal-header { padding: 20px; }
+  .modal-tabs { padding: 0 20px; }
+  h1 { letter-spacing: -1px; }
+}
+
+/* Loading spinner */
+.spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text { text-align: center; color: var(--text-muted); font-size: 14px; margin-top: 12px; }
+
+/* Info badge colors */
+.badge-tg { background: rgba(91,138,255,0.15); color: var(--accent); border: 1px solid rgba(91,138,255,0.3); }
+.badge-2bfs { background: rgba(67,232,192,0.15); color: var(--accent3); border: 1px solid rgba(67,232,192,0.3); }
+.badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 6px; font-family: 'Space Mono', monospace; }
+
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Physik<span>Hub</span> BW</div>
+  <div class="nav-links">
+    <button onclick="showSection('topics')" class="active" id="nav-topics">Themen</button>
+    <button onclick="showSection('formeln')" id="nav-formeln">Formelsammlung</button>
+    <button onclick="showSection('quiz')" id="nav-quiz">Schnell-Quiz</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Bildungsplan BW 2020 · TG & 2BFS</div>
+  <h1>Physik<br><span class="highlight">lernen</span> & <span class="highlight2">üben</span></h1>
+  <p class="hero-sub">Alle Themen aus dem Bildungsplan – mit Erklärungen, Formeln und interaktiven Aufgaben mit direktem Feedback.</p>
+  <div class="hero-cards">
+    <div class="hero-card" onclick="startApp('topics')">
+      <div class="card-icon">📐</div>
+      <div class="card-title">Alle Themen</div>
+      <div class="card-count">11 Einheiten · TG + 2BFS</div>
+    </div>
+    <div class="hero-card" onclick="startApp('formeln')">
+      <div class="card-icon">⚗️</div>
+      <div class="card-title">Formelsammlung</div>
+      <div class="card-count">50+ Formeln</div>
+    </div>
+    <div class="hero-card" onclick="startApp('quiz')">
+      <div class="card-icon">🎯</div>
+      <div class="card-title">Schnell-Quiz</div>
+      <div class="card-count">AFB I · II · III</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN APP -->
+<div class="app" id="app">
+
+  <!-- TOPICS SECTION -->
+  <div class="content-section active" id="section-topics">
+    <div class="section-header">
+      <div class="section-title">Themengebiete</div>
+      <div class="school-tabs">
+        <button class="school-tab active" onclick="filterTopics('all', this)">Alle</button>
+        <button class="school-tab" onclick="filterTopics('tg', this)">TG</button>
+        <button class="school-tab" onclick="filterTopics('2bfs', this)">2BFS</button>
+      </div>
+    </div>
+    <div class="topic-grid" id="topic-grid"></div>
+  </div>
+
+  <!-- FORMELSAMMLUNG SECTION -->
+  <div class="content-section" id="section-formeln">
+    <div class="section-header">
+      <div class="section-title">Formelsammlung</div>
+    </div>
+    <div class="formula-grid" id="formula-grid"></div>
+  </div>
+
+  <!-- QUICK QUIZ SECTION -->
+  <div class="content-section" id="section-quiz">
+    <div class="section-header">
+      <div class="section-title">Schnell-Quiz</div>
+    </div>
+    <div id="quick-quiz-content"></div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-subtitle" id="modal-subtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('theorie', this)">📖 Theorie</button>
+      <button class="modal-tab" onclick="switchTab('formeln', this)">⚗️ Formeln</button>
+      <button class="modal-tab" onclick="switchTab('aufgaben', this)">🎯 Aufgaben</button>
+    </div>
+    <div class="modal-body">
+      <div id="tab-theorie" class="content-section active"></div>
+      <div id="tab-formeln" class="content-section"></div>
+      <div id="tab-aufgaben" class="content-section"></div>
+    </div>
+  </div>
+</div>
+
+<footer>PhysikHub BW · Bildungsplan Baden-Württemberg 2020 · TG & 2BFS · Lernplattform</footer>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+
+const topics = [
+  {
+    id: 'kinematik',
+    name: 'Kinematik & Dynamik',
+    bpe: 'BPE 1',
+    icon: '🚀',
+    color: 'blue',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Bewegungen beschreiben und analysieren – von gleichförmig bis beschleunigt, Impuls und Newtonsche Axiome.',
+    tags: ['Bewegung', 'Impuls', 'Newton', 'Kräfte'],
+    theorie: [
+      {
+        title: 'Gleichförmige Bewegung',
+        body: 'Bei der gleichförmigen Bewegung ist die Geschwindigkeit konstant. Die zurückgelegte Strecke s wächst linear mit der Zeit t. Im s(t)-Diagramm ergibt sich eine Gerade, deren Steigung der Geschwindigkeit entspricht. Die Durchschnittsgeschwindigkeit ergibt sich aus Δs/Δt, die Momentangeschwindigkeit aus der Tangente an die Kurve.',
+        bullets: ['s(t)-Diagramm: Gerade → v = const', 'v(t)-Diagramm: Waagerechte Linie', 'Bezugssystem bestimmt die Bewegungsbeschreibung (Relativitätsprinzip)']
+      },
+      {
+        title: 'Impuls & Impulserhaltung',
+        body: 'Der Impuls p = m · v ist eine vektorielle Größe (Richtung!). Das Trägheitsgesetz (Newton 1) besagt: Ohne äußere Kraft bleibt der Impuls konstant. Der Impulserhaltungssatz gilt bei abgeschlossenen Systemen – z. B. bei Stößen.',
+        bullets: ['Inelastischer Stoß: Objekte bewegen sich gemeinsam weiter', 'Elastischer Stoß: Impuls UND kinetische Energie erhalten', 'Impulsänderung Δp = F · Δt (Kraftstoß)']
+      },
+      {
+        title: 'Newtonsche Axiome',
+        body: '1. Trägheitsgesetz: Kein Impuls-Wechsel ohne Kraft. 2. Aktionsgesetz: F = Δp/Δt = m · a. 3. Wechselwirkungsgesetz (Reaktionsprinzip): actio = reactio – Kräfte treten immer paarweise auf.',
+        bullets: ['F = m · a gilt nur bei konstanter Masse', 'Resultierende Kraft: F_res = ΣF_i (vektoriell!)', 'Kräftegleichgewicht: F_res = 0 → a = 0']
+      },
+      {
+        title: 'Waagerechter Wurf (Superpositionsprinzip)',
+        body: 'Der waagerechte Wurf setzt sich aus zwei unabhängigen Bewegungen zusammen: gleichförmig in x-Richtung und freier Fall in y-Richtung (Superpositionsprinzip). Die Bewegungen überlagern sich unabhängig voneinander.',
+        bullets: ['x-Richtung: x = v₀ · t', 'y-Richtung: y = ½ · g · t²', 'Bahnkurve: Parabel']
+      }
+    ],
+    formeln: [
+      { name: 'Weg (gleichf.)', eq: 's = v · t' },
+      { name: 'Geschwindigkeit', eq: 'v = Δs / Δt' },
+      { name: 'Impuls', eq: 'p = m · v' },
+      { name: 'Kraft / Grundgesetz', eq: 'F = Δp/Δt = m · a' },
+      { name: 'Kraftstoß', eq: 'Δp = F · Δt' },
+      { name: 'Weg (Beschl.)', eq: 's = ½ · a · t²' },
+      { name: 'Endgeschwindigkeit', eq: 'v = a · t' },
+      { name: 'Freier Fall', eq: 'h = ½ · g · t²  (g ≈ 9,81 m/s²)' },
+      { name: 'Hookesches Gesetz', eq: 'F = D · x' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Eine Schülerin fährt 10 Minuten lang mit konstant 30 km/h Fahrrad. Welche Strecke legt sie zurück?',
+          options: ['3 km', '5 km', '300 m', '10 km'],
+          answer: 0,
+          feedback: 'Richtig! s = v · t = 30 km/h · (10/60 h) = 30 · 1/6 = 5 km. Achtung: t muss in Stunden sein → 5 km.'
+        },
+        {
+          type: 'mc',
+          q: 'Was ist der Impuls eines Körpers mit m = 2 kg und v = 3 m/s?',
+          options: ['6 kg·m/s', '1,5 kg·m/s', '5 kg·m/s', '0,67 kg·m/s'],
+          answer: 0,
+          feedback: 'Richtig! p = m · v = 2 kg · 3 m/s = 6 kg·m/s'
+        },
+        {
+          type: 'mc',
+          q: 'Welches von Newtons Axiomen beschreibt „actio = reactio"?',
+          options: ['1. Axiom (Trägheitsgesetz)', '2. Axiom (Aktionsgesetz)', '3. Axiom (Wechselwirkungsgesetz)', 'Keines davon'],
+          answer: 2,
+          feedback: 'Korrekt! Das 3. Newtonsche Axiom: Kräfte wirken immer paarweise. Die Gegenkraft ist gleich groß, entgegengesetzt gerichtet und greift am anderen Körper an.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Ball (m = 0,5 kg) trifft mit v = 20 m/s auf eine Wand und prallt mit v = −15 m/s zurück. Welche Impulsänderung erfährt der Ball?',
+          options: ['−17,5 kg·m/s', '−2,5 kg·m/s', '−35 kg·m/s', '2,5 kg·m/s'],
+          answer: 0,
+          feedback: 'Richtig! Δp = m · Δv = 0,5 · (−15 − 20) = 0,5 · (−35) = −17,5 kg·m/s. Das negative Vorzeichen zeigt die Richtungsumkehr.'
+        },
+        {
+          type: 'mc',
+          q: 'Beim waagerechten Wurf wird ein Stein horizontal mit v₀ = 10 m/s abgeworfen. Nach t = 2 s trifft er den Boden. Welche horizontale Strecke hat er zurückgelegt?',
+          options: ['20 m', '19,6 m', '10 m', '40 m'],
+          answer: 0,
+          feedback: 'Richtig! x = v₀ · t = 10 m/s · 2 s = 20 m. Die horizontale Bewegung ist gleichförmig – unabhängig vom Fall.'
+        },
+        {
+          type: 'open',
+          q: 'Erkläre in eigenen Worten, warum beim waagerechten Wurf das Superpositionsprinzip angewendet wird. Welche zwei Bewegungen überlagern sich?',
+          solution: 'Beim waagerechten Wurf überlagern sich: (1) Eine gleichförmige Bewegung in horizontaler Richtung (konstante Anfangsgeschwindigkeit, keine Kraft) und (2) ein freier Fall in vertikaler Richtung (Beschleunigung durch Schwerkraft g). Beide Bewegungen sind unabhängig voneinander und werden addiert (superponiert).'
+        }
+      ],
+      afb3: [
+        {
+          type: 'mc',
+          q: 'Zwei Wagen (m₁ = 3 kg, m₂ = 1 kg) stoßen inelastisch zusammen. v₁ = 4 m/s, v₂ = 0. Welche Geschwindigkeit hat das gemeinsame System nach dem Stoß?',
+          options: ['3 m/s', '2 m/s', '4 m/s', '1 m/s'],
+          answer: 0,
+          feedback: 'Richtig! Impulserhaltung: p_vorher = m₁·v₁ = 3·4 = 12 kg·m/s. p_nachher = (m₁+m₂)·v = 4·v. → v = 12/4 = 3 m/s.'
+        },
+        {
+          type: 'open',
+          q: 'Eine Rakete beschleunigt im Weltall durch Ausstoß von Treibstoff. Analysiere diesen Vorgang mithilfe des Impulserhaltungssatzes und der Newtonschen Axiome. Warum funktioniert das im luftleeren Raum?',
+          solution: 'Impulserhaltung: Das Gesamtsystem (Rakete + Treibstoff) ist isoliert. Vor dem Zünden ist p_ges = 0. Beim Ausstoß erhält der Treibstoff nach hinten Impuls → Rakete erhält gleich großen Impuls nach vorne (3. Newtonsches Axiom: actio=reactio). Kein Abdrücken an Luft nötig – die Kraftwirkung erfolgt durch den Impulsaustausch zwischen Rakete und ausgestoßenem Gas (2. Axiom: F = Δp/Δt).'
+        }
+      ]
+    }
+  },
+  {
+    id: 'energie',
+    name: 'Energie & Leistung',
+    bpe: 'BPE 2',
+    icon: '⚡',
+    color: 'yellow',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Energieformen, Energieerhaltung, Leistung und Wirkungsgrad in Alltag und Technik.',
+    tags: ['Energie', 'Leistung', 'Wirkungsgrad', 'Mechanik'],
+    theorie: [
+      {
+        title: 'Energieformen & Energieerhaltung',
+        body: 'Energie kann weder erzeugt noch vernichtet, sondern nur umgewandelt oder übertragen werden. Die Gesamtenergie eines abgeschlossenen Systems bleibt konstant. Energieentwertung: Energie wird in weniger nutzbare Form (Wärme) umgewandelt – Perpetuum mobile 1. Art ist unmöglich.',
+        bullets: ['Kinetische Energie: E_kin = ½·m·v²', 'Lageenergie: E_pot = m·g·h', 'Spannenergie: E_spann = ½·D·x²', 'Thermische Energie entsteht durch Reibung (Energieentwertung)']
+      },
+      {
+        title: 'Leistung & Wirkungsgrad',
+        body: 'Leistung beschreibt, wie schnell Energie umgewandelt wird. Der Wirkungsgrad η gibt an, welcher Anteil der zugeführten Energie als nutzbare Energie vorliegt. Energieflussdiagramme visualisieren Verluste.',
+        bullets: ['P = W/t = F · v', 'η = W_nutz / W_zu (dimensionslos, 0 < η ≤ 1)', 'Erneuerbare Energien: Windkraft, Photovoltaik, Wasserkraft']
+      }
+    ],
+    formeln: [
+      { name: 'Kinetische Energie', eq: 'E_kin = ½ · m · v²' },
+      { name: 'Lageenergie', eq: 'E_pot = m · g · h' },
+      { name: 'Spannenergie', eq: 'E_spann = ½ · D · x²' },
+      { name: 'Leistung', eq: 'P = W / t = F · v' },
+      { name: 'Wirkungsgrad', eq: 'η = W_nutz / W_zu' },
+      { name: 'Energieerhaltung', eq: 'E_kin + E_pot = const (reibungsfrei)' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Welche kinetische Energie hat ein Auto (m = 1000 kg) bei v = 20 m/s?',
+          options: ['200.000 J', '100.000 J', '400.000 J', '20.000 J'],
+          answer: 0,
+          feedback: 'Richtig! E_kin = ½ · 1000 · 20² = 500 · 400 = 200.000 J = 200 kJ'
+        },
+        {
+          type: 'mc',
+          q: 'Was bedeutet ein Wirkungsgrad von η = 0,8?',
+          options: ['80 % der Energie ist nutzbar', '80 % der Energie geht verloren', '8 % der Energie ist nutzbar', 'Der Wirkungsgrad ist maximal'],
+          answer: 0,
+          feedback: 'Richtig! η = W_nutz/W_zu = 0,8 → 80 % der zugeführten Energie wird als Nutzenergie gewonnen, 20 % gehen als Wärme verloren.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Stein (m = 2 kg) fällt aus h = 5 m. Welche Geschwindigkeit hat er kurz vor dem Aufprall (reibungsfrei, g = 10 m/s²)?',
+          options: ['10 m/s', '7,07 m/s', '100 m/s', '5 m/s'],
+          answer: 0,
+          feedback: 'E_pot = E_kin: m·g·h = ½·m·v² → v = √(2·g·h) = √(2·10·5) = √100 = 10 m/s'
+        },
+        {
+          type: 'open',
+          q: 'Erkläre, warum ein Perpetuum mobile 1. Art nach dem Energieerhaltungssatz unmöglich ist. Verwende ein konkretes Beispiel.',
+          solution: 'Ein Perpetuum mobile 1. Art würde dauerhaft Energie erzeugen, ohne Energie aufzuwenden – das widerspricht dem Energieerhaltungssatz. Bsp. Wasserrad: Das Wasser müsste sich nach dem Antrieb selbst wieder hochpumpen. Dazu bräuchte es aber mindestens die gewonnene Energie zurück – plus Verluste durch Reibung. Die Gesamtenergie kann nie größer werden als die eingesetzte.'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Bewerte die Effizienz einer Windkraftanlage. Welche Faktoren begrenzen den Wirkungsgrad? Recherchiere den "Betz\'schen Grenzwert" und erkläre seine physikalische Bedeutung.',
+          solution: 'Betz-Grenzwert: max. 59,3 % der Windenergie ist nutzbar. Grund: Die Luft hinter dem Rotor muss noch Restbewegungsenergie haben, sonst staut sie sich. Weitere Verluste durch: mechanische Reibung im Getriebe (~5%), elektrische Verluste im Generator (~5%), aerodynamische Verluste der Rotorblätter. Realer η ≈ 40-50%. Der Wirkungsgrad ist physikalisch durch den Energieerhaltungssatz begrenzt, nicht durch technisches Versagen.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'moderne',
+    name: 'Moderne Physik',
+    bpe: 'BPE 3',
+    icon: '🌌',
+    color: 'red',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Relativitätsprinzip, Grenzen der klassischen Mechanik, Lichtgeschwindigkeit als Grenzgeschwindigkeit.',
+    tags: ['Relativität', 'Zeitdilatation', 'E=mc²'],
+    theorie: [
+      {
+        title: 'Relativitätsprinzip & Bezugssysteme',
+        body: 'Kein Bezugssystem ist ausgezeichnet – Physik sieht in allen Inertialsystemen gleich aus. Die Lichtgeschwindigkeit c ≈ 3·10⁸ m/s ist in allen Bezugssystemen gleich und kann nicht überschritten werden.',
+        bullets: ['Inertialsystem: Bezugssystem ohne Beschleunigung', 'Relativitätsprinzip: Naturgesetze gelten in allen Inertialsystemen gleich', 'c ist absolute Grenzgeschwindigkeit']
+      },
+      {
+        title: 'Grenzen der Newtonschen Mechanik',
+        body: 'Bei Geschwindigkeiten nahe c weichen Vorhersagen der Newtonschen Mechanik von Beobachtungen ab. Einsteins Spezielle Relativitätstheorie liefert korrekte Beschreibungen: Zeitdilatation und Längenkontraktion sind experimentell bestätigt (z.B. Myonen in Höhenstrahlung).',
+        bullets: ['Zeitdilatation: Bewegte Uhren gehen langsamer', 'Längenkontraktion: Bewegte Objekte sind kürzer', 'Energie-Masse-Äquivalenz: E = m·c²']
+      }
+    ],
+    formeln: [
+      { name: 'Energie-Masse-Äquivalenz', eq: 'E = m · c²' },
+      { name: 'Lichtgeschwindigkeit', eq: 'c ≈ 3 · 10⁸ m/s' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Was besagt die Energie-Masse-Äquivalenz E = mc²?',
+          options: ['Masse und Energie sind äquivalent und ineinander umwandelbar', 'Energie ist immer größer als Masse', 'Nur bei Lichtgeschwindigkeit gilt das Gesetz', 'Masse kann nicht in Energie umgewandelt werden'],
+          answer: 0,
+          feedback: 'Richtig! E = mc² zeigt, dass Masse und Energie äquivalente Formen derselben physikalischen Größe sind. Kleine Massen entsprechen enormen Energiemengen (c² ≈ 9·10¹⁶ m²/s²).'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Myonist bewegt sich mit 0,99c. Sein Zerfall dauert in seinem eigenen Bezugssystem t₀ = 2,2 μs. Wie sieht das ein Beobachter auf der Erde? (Zeitdilatation)',
+          options: ['Die Zeit vergeht für den Beobachter langsamer (Myonen lebt länger)', 'Keine Änderung', 'Die Zeit vergeht für den Beobachter schneller', 'Das Myon lebt kürzer'],
+          answer: 0,
+          feedback: 'Richtig! Zeitdilatation: Bewegte Uhren gehen langsamer. Für einen Erdbeobachter lebt das Myon deutlich länger als 2,2 μs – das erlaubt ihm, die Atmosphäre zu durchqueren und die Erdoberfläche zu erreichen.'
+        },
+        {
+          type: 'open',
+          q: 'Erkläre das Relativitätsprinzip und warum kein Bezugssystem "ausgezeichnet" ist. Was folgt daraus für die Lichtgeschwindigkeit?',
+          solution: 'Das Relativitätsprinzip besagt, dass die Naturgesetze in allen gleichförmig bewegten Bezugssystemen (Inertialsystemen) identisch sind. Es gibt kein "absolut ruhendes" System. Daraus folgt: Die Lichtgeschwindigkeit c muss in allen Inertialsystemen gleich sein (sonst könnte man durch Lichtmessung das "ruhende" System auszeichnen). Das führt zu Zeitdilatation und Längenkontraktion.'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Im Kernkraftwerk wird Kernspaltung genutzt. Beim Spalten von Uran wird eine Massendefekt von ca. Δm = 3·10⁻²⁸ kg pro Spaltung frei. Berechne die freiwerdende Energie und diskutiere, welche gesellschaftliche Bedeutung dies hat.',
+          solution: 'E = Δm · c² = 3·10⁻²⁸ · (3·10⁸)² = 3·10⁻²⁸ · 9·10¹⁶ = 2,7·10⁻¹¹ J pro Spaltung. Pro Mol Uran (6·10²³ Atome): E ≈ 1,6·10¹³ J = 16 TJ – enorme Energiedichte. Gesellschaftliche Bedeutung: CO₂-freie Grundlastkraft vs. Risiken (Atomunfall, radioaktiver Abfall, Proliferation), aktuell Diskussion über Kernfusion als sauberere Alternative.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'magnetfeld',
+    name: 'Das magnetische Feld',
+    bpe: 'BPE 4',
+    icon: '🧲',
+    color: 'blue',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Magnetfelder von Leitern und Spulen, magnetische Flussdichte, Feldlinienbilder.',
+    tags: ['Magnetfeld', 'Flussdichte', 'Oersted', 'Spule'],
+    theorie: [
+      {
+        title: 'Zusammenhang Strom & Magnetfeld',
+        body: 'Elektrischer Strom erzeugt ein Magnetfeld (Oersted-Versuch, 1820). Die Feldlinien um einen geraden Leiter bilden konzentrische Kreise. Die Richtung des Feldes folgt der Rechte-Hand-Regel (Daumen = Stromrichtung, Finger = Feldlinien). Im Innern einer Spule entsteht ein homogenes Magnetfeld.',
+        bullets: ['Oersted-Versuch: Kompassnadel wird durch Strom abgelenkt', 'Feld um geraden Leiter: konzentrische Kreise', 'Spule: homogenes B-Feld im Innern', 'Feldliniendarstellung: Richtung, Dichte = Stärke']
+      },
+      {
+        title: 'Magnetische Flussdichte B',
+        body: 'Die magnetische Flussdichte B [Tesla] beschreibt die "Stärke" des Magnetfeldes. Sie wird über die Kraft auf einen stromdurchflossenen Leiter definiert: F = B · I · l. Die Drei-Finger-Regel (UVW) gibt die Richtung der Kraft an.',
+        bullets: ['F = B · I · l (Kraft auf Leiter)', 'Drei-Finger-Regel: Strom, B-Feld, Kraft', 'Spule innen: B = μ₀ · n/l · I', 'Einheit: 1 T = 1 kg/(A·s²)']
+      }
+    ],
+    formeln: [
+      { name: 'Kraft auf Leiter', eq: 'F = B · I · l' },
+      { name: 'B-Feld Spule', eq: 'B = μ₀ · (N/l) · I' },
+      { name: 'Permeabilität', eq: 'μ₀ = 4π·10⁻⁷ T·m/A' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Welchen Versuch hat Oersted durchgeführt, der den Zusammenhang zwischen Strom und Magnetfeld bewies?',
+          options: ['Eine Kompassnadel wurde durch einen stromdurchflossenen Leiter abgelenkt', 'Ein Magnet wurde durch eine Spule geschoben', 'Ein Leiter wurde in ein Magnetfeld gelegt und die Kraft gemessen', 'Zwei Spulen wurden induktiv gekoppelt'],
+          answer: 0,
+          feedback: 'Richtig! Hans Christian Ørsted beobachtete 1820, dass eine Kompassnadel auslenkte, wenn ein elektrischer Strom durch einen Leiter in der Nähe floss – erster Nachweis des Zusammenhangs von Elektrizität und Magnetismus.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Leiter (l = 0,2 m) in einem Magnetfeld (B = 0,5 T) wird von I = 4 A durchflossen. Welche Kraft wirkt auf ihn (senkrecht zum Feld)?',
+          options: ['0,4 N', '2 N', '0,1 N', '4 N'],
+          answer: 0,
+          feedback: 'F = B · I · l = 0,5 · 4 · 0,2 = 0,4 N'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Erkläre, wie ein Elektromotor auf Basis der Kraft auf stromdurchflossene Leiter im Magnetfeld funktioniert. Welche Rolle spielt der Kommutator?',
+          solution: 'Stromschleife im Magnetfeld: Auf die gegenüberliegenden Leiter wirken entgegengesetzte Kräfte (F=BIl), die ein Drehmoment erzeugen. Die Schleife dreht sich. Problem: Nach 180° würde das Drehmoment entgegenwirken. Der Kommutator (Stromwender) kehrt bei der Halbdrehung die Stromrichtung um, sodass das Drehmoment immer in derselben Richtung bleibt – kontinuierliche Rotation.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'efeld',
+    name: 'Das elektrische Feld',
+    bpe: 'BPE 5',
+    icon: '⚡',
+    color: 'green',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Elektrische Feldstärke, Coulombsches Gesetz, Potenzial, Plattenkondensator.',
+    tags: ['E-Feld', 'Coulomb', 'Kondensator', 'Potenzial'],
+    theorie: [
+      {
+        title: 'Elektrische Feldstärke',
+        body: 'Die elektrische Feldstärke E = F/q beschreibt die Kraft auf eine Probeladung. Sie ist eine vektorielle Größe (Richtung von + nach −). Feldlinien zeigen die Richtung der Kraft auf positive Ladungen. Im homogenen Feld (Plattenkondensator) verlaufen die Feldlinien parallel und gleichmäßig.',
+        bullets: ['E = F/q (Definitionsgleichung)', 'Einheit: 1 N/C = 1 V/m', 'Feldlinien: von + nach −', 'Superpositionsprinzip: Felder können überlagert werden']
+      },
+      {
+        title: 'Plattenkondensator',
+        body: 'Zwei parallele Platten mit entgegengesetzter Ladung erzeugen ein homogenes E-Feld. Die Kapazität C = Q/U gibt an, wie viel Ladung pro Volt gespeichert werden kann. Ein Dielektrikum zwischen den Platten erhöht die Kapazität.',
+        bullets: ['C = ε₀ · εᵣ · A/d', 'E = U/d (im homogenen Feld)', 'W = ½ · C · U²  (gespeicherte Energie)', 'Dielektrikum: εᵣ > 1 erhöht Kapazität']
+      }
+    ],
+    formeln: [
+      { name: 'Elektrische Feldstärke', eq: 'E = F / q' },
+      { name: 'Coulombsches Gesetz', eq: 'F = k · Q₁·Q₂ / r²' },
+      { name: 'Homogenes Feld', eq: 'E = U / d' },
+      { name: 'Kapazität', eq: 'C = Q / U = ε₀·εᵣ·A/d' },
+      { name: 'Feldenergie', eq: 'W = ½ · C · U²' },
+      { name: 'Coulombkonstante', eq: 'k ≈ 9 · 10⁹ N·m²/C²' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Auf eine Probeladung q = 2·10⁻⁶ C wirkt eine Kraft F = 6·10⁻³ N. Wie groß ist die elektrische Feldstärke?',
+          options: ['3000 V/m', '1200 V/m', '3·10⁻⁹ V/m', '300 V/m'],
+          answer: 0,
+          feedback: 'E = F/q = 6·10⁻³ / 2·10⁻⁶ = 3000 V/m = 3 kV/m'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Plattenkondensator hat Plattenabstand d = 5 mm und Spannung U = 100 V. Wie groß ist das elektrische Feld zwischen den Platten?',
+          options: ['20.000 V/m', '500 V/m', '0,05 V/m', '2000 V/m'],
+          answer: 0,
+          feedback: 'E = U/d = 100 V / 0,005 m = 20.000 V/m = 20 kV/m'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Vergleiche das elektrische Feld und das Gravitationsfeld bezüglich Gemeinsamkeiten und Unterschieden. Berücksichtige Feldlinien, Kraftgesetze und Energiebetrachtungen.',
+          solution: 'Gemeinsamkeiten: Beide folgen 1/r²-Gesetzen (Coulomb/Newton), haben radialsymmetrische Feldlinien bei Punktquellen, können homogene Felder erzeugen, Superpositionsprinzip gilt, Feldstärke als Kraft pro Testgröße definiert. Unterschiede: E-Feld kann anziehend UND abstoßend sein (± Ladungen), Gravitationsfeld immer anziehend. E-Feld ist deutlich stärker (Coulombkonstante >> Gravitationskonstante). Abschirmung: E-Feld durch Faraday-Käfig abschirmbar, Gravitation nicht.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'gravitation',
+    name: 'Das Gravitationsfeld',
+    bpe: 'BPE 6',
+    icon: '🌍',
+    color: 'yellow',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Newtonsches Gravitationsgesetz, Feldlinienbilder, Gravitationsfeldstärke.',
+    tags: ['Gravitation', 'Newton', 'Feld', 'Erde'],
+    theorie: [
+      {
+        title: 'Newtonsches Gravitationsgesetz',
+        body: 'Alle Massen ziehen sich gegenseitig an. Die Gravitationskraft nimmt mit dem Quadrat des Abstandes ab (1/r²-Gesetz). Das Gravitationsfeld ist immer anziehend – im Gegensatz zum elektrischen Feld.',
+        bullets: ['F = G · m₁·m₂ / r²', 'G = 6,674·10⁻¹¹ N·m²/kg² (Gravitationskonstante)', 'Gravitationsfeldstärke g = F/m = G·M/r²', 'Nahe Erdoberfläche: g ≈ 9,81 m/s² = const (Näherung)']
+      }
+    ],
+    formeln: [
+      { name: 'Gravitationsgesetz', eq: 'F = G · m₁·m₂ / r²' },
+      { name: 'Gravitationskonstante', eq: 'G = 6,674·10⁻¹¹ N·m²/kg²' },
+      { name: 'Feldstärke', eq: 'g = G · M / r²' },
+      { name: 'Näherung Erdoberfläche', eq: 'g ≈ 9,81 m/s²' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Die Gravitationsfeldstärke der Erde beträgt an der Oberfläche g ≈ 9,81 m/s². Was versteht man darunter?',
+          options: ['Die Kraft pro Kilogramm Masse', 'Die Beschleunigung eines fallenden Körpers', 'Beides ist korrekt', 'Die Erdanziehungskraft insgesamt'],
+          answer: 2,
+          feedback: 'Richtig! g = F/m gibt die Gravitationskraft pro Masseneinheit an – das ist gleichzeitig die Fallbeschleunigung im freien Fall (F = m·g → a = g).'
+        }
+      ],
+      afb2: [
+        {
+          type: 'open',
+          q: 'Erkläre, warum das homogene Gravitationsfeld (g = const) nur eine Näherung für die Erdoberfläche ist. Wann ist diese Näherung gültig?',
+          solution: 'Das Gravitationsgesetz gibt F ~ 1/r² – das Feld ist eigentlich radial und nimmt mit der Entfernung ab. Nahe der Erdoberfläche (h << R_Erde) ändert sich r kaum: R_Erde ≈ 6370 km, typische Höhen h ≈ 100 m sind vernachlässigbar. Deshalb gilt g ≈ const als sehr gute Näherung. Für Satellitenbahnen oder interplanetare Reisen muss das radiale Feld verwendet werden.'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Berechne die Gravitationskraft zwischen Erde (M = 6·10²⁴ kg) und Mond (m = 7,3·10²² kg) bei einem Abstand von r = 3,84·10⁸ m. Vergleiche mit der Sonnenkraft auf den Mond.',
+          solution: 'F_EM = G·M_E·M_M/r² = 6,67·10⁻¹¹ · 6·10²⁴ · 7,3·10²² / (3,84·10⁸)² ≈ 2·10²⁰ N. Die Sonne (M_S=2·10³⁰kg, r=1,5·10¹¹m) zieht den Mond mit F≈4,4·10²⁰N – also stärker als die Erde! Der Mond orbitet trotzdem die Erde, weil er sich gemeinsam mit der Erde um die Sonne bewegt (Drei-Körper-Problem).'
+        }
+      ]
+    }
+  },
+  {
+    id: 'teilchen',
+    name: 'Teilchen in Feldern',
+    bpe: 'BPE 7',
+    icon: '⚛️',
+    color: 'red',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Kreisbewegung, Bewegung geladener Teilchen in E- und B-Feldern, Massenspektrometer.',
+    tags: ['Kreisbewegung', 'Lorentzkraft', 'e/m', 'Millikan'],
+    theorie: [
+      {
+        title: 'Gleichförmige Kreisbewegung',
+        body: 'Bei der Kreisbewegung wirkt konstant eine Zentripetalkraft zur Mitte hin. Die Geschwindigkeit ist konstant (Betrag), aber die Richtung ändert sich – es gibt eine Zentripetalbeschleunigung.',
+        bullets: ['T = Umlaufzeit, f = 1/T', 'v = 2πr/T = ω·r', 'a_z = v²/r = ω²·r', 'F_z = m·v²/r (Zentripetalkraft)']
+      },
+      {
+        title: 'Lorentzkraft – Teilchen im Magnetfeld',
+        body: 'Eine Ladung q, die sich mit v senkrecht zu B bewegt, erfährt die Lorentzkraft F = q·v·B. Diese wirkt als Zentripetalkraft → Kreisbahn. Das Verhältnis e/m lässt sich so bestimmen (Fadenstrahlrohr).',
+        bullets: ['F_L = q · v · B (senkrecht zu v und B)', 'Kreisbahn: q·v·B = m·v²/r → r = m·v/(q·B)', 'Massenspektrometer: Trennung nach m/q', 'Millikan-Versuch: Bestimmung der Elementarladung e']
+      }
+    ],
+    formeln: [
+      { name: 'Bahngeschwindigkeit', eq: 'v = 2π·r / T' },
+      { name: 'Zentripetalkraft', eq: 'F_z = m · v² / r' },
+      { name: 'Lorentzkraft', eq: 'F_L = q · v · B' },
+      { name: 'Kreisbahnradius', eq: 'r = m·v / (q·B)' },
+      { name: 'Winkelgeschwindigkeit', eq: 'ω = 2π / T = 2π·f' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Was ist die Zentripetalkraft?',
+          options: ['Die nach innen gerichtete Kraft, die eine Kreisbewegung ermöglicht', 'Die nach außen gerichtete Kraft beim Schleudern', 'Die Reibungskraft auf einer Kreisbahn', 'Die Gewichtskraft bei einer Loopbahn'],
+          answer: 0,
+          feedback: 'Richtig! Die Zentripetalkraft zeigt stets zur Kreismitte und erzwingt die Richtungsänderung. Wichtig: Es gibt keine "Zentrifugalkraft" im Inertialsystem – das ist ein Scheingefühl.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Elektron (m = 9,1·10⁻³¹ kg, q = 1,6·10⁻¹⁹ C) bewegt sich mit v = 10⁷ m/s senkrecht in ein Magnetfeld B = 5·10⁻³ T. Wie groß ist der Kreisbahnradius?',
+          options: ['0,114 m', '1,14 m', '0,0114 m', '11,4 m'],
+          answer: 0,
+          feedback: 'r = m·v/(q·B) = 9,1·10⁻³¹ · 10⁷ / (1,6·10⁻¹⁹ · 5·10⁻³) = 9,1·10⁻²⁴ / 8·10⁻²² ≈ 0,114 m'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Erkläre das Prinzip des Massenspektrometers. Welche physikalischen Gesetze werden genutzt, um Ionen nach ihrer Masse zu trennen?',
+          solution: 'Funktionsprinzip: (1) Ionisierung: Atome werden ionisiert (Ladung q). (2) Beschleunigung: Ionen werden durch Spannung U auf Geschwindigkeit v gebracht: q·U = ½·m·v². (3) Ablenkung: Im Magnetfeld B bewegen sich Ionen auf Kreisbahn (Lorentzkraft = Zentripetalkraft): q·v·B = m·v²/r → r = m·v/(q·B). (4) Detektion: Schwerere Ionen haben größeren Radius. Aus r kann m/q bestimmt werden. Anwendung: Isotopenanalyse, Doping-Tests, Massenanalyse in der Chemie.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'induktion',
+    name: 'Elektromagnet. Induktion',
+    bpe: 'BPE 8',
+    icon: '🔄',
+    color: 'green',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Faradaysches Induktionsgesetz, Selbstinduktion, Generator und Transformator.',
+    tags: ['Induktion', 'Faraday', 'Lenz', 'Generator'],
+    theorie: [
+      {
+        title: 'Elektromagnetische Induktion',
+        body: 'Eine Spannung wird induziert, wenn sich der magnetische Fluss durch eine Leiterschleife ändert. Dies kann durch Bewegung des Leiters, Flächenänderung oder Änderung des B-Felds geschehen.',
+        bullets: ['Magnetischer Fluss: Φ = B · A · cos(α)', 'Induktionsgesetz: U_ind = −N · ΔΦ/Δt', 'Lenz\'sche Regel: U_ind wirkt ihrer Ursache entgegen', 'Anwendungen: Generator, Transformator, induktives Laden']
+      },
+      {
+        title: 'Selbstinduktion & Induktivität',
+        body: 'Eine Spule, durch die sich der Strom ändert, induziert eine Spannung in sich selbst (Selbstinduktion). Die Induktivität L beschreibt diese Eigenschaft. Die Energie des Magnetfeldes ist W = ½·L·I².',
+        bullets: ['U_ind = −L · ΔI/Δt', 'L = μ₀ · μᵣ · N²·A/l', 'Energie: W = ½·L·I²', 'Lenz\'sche Regel gilt auch hier']
+      }
+    ],
+    formeln: [
+      { name: 'Magnetischer Fluss', eq: 'Φ = B · A · cos(α)' },
+      { name: 'Induktionsgesetz', eq: 'U_ind = −N · ΔΦ/Δt' },
+      { name: 'Selbstinduktion', eq: 'U_ind = −L · ΔI/Δt' },
+      { name: 'Energie Magnetfeld', eq: 'W = ½ · L · I²' },
+      { name: 'Induktivität Spule', eq: 'L = μ₀ · N² · A / l' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Was besagt die Lenz\'sche Regel?',
+          options: ['Die induzierte Spannung wirkt ihrer Ursache entgegen', 'Die induzierte Spannung verstärkt immer die Ursache', 'Die induzierte Spannung ist immer positiv', 'Die Spannung ist proportional zum Fluss (nicht zur Änderung)'],
+          answer: 0,
+          feedback: 'Richtig! Die Lenz\'sche Regel ist eine Konsequenz des Energieerhaltungssatzes. Die induzierte Spannung erzeugt einen Strom, der dem Flussanstieg entgegenwirkt. Das negative Vorzeichen im Induktionsgesetz drückt dies aus.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Eine Spule (N = 100 Windungen) erfährt eine Flussänderung von ΔΦ = 5·10⁻³ Wb in Δt = 0,1 s. Wie groß ist die induzierte Spannung?',
+          options: ['5 V', '0,5 V', '50 V', '500 V'],
+          answer: 0,
+          feedback: '|U_ind| = N · |ΔΦ/Δt| = 100 · 5·10⁻³/0,1 = 100 · 0,05 = 5 V'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Erkläre das Funktionsprinzip eines Transformators. Warum ist Wechselstrom für die Energieübertragung über große Strecken besser geeignet als Gleichstrom? Welche Verluste entstehen?',
+          solution: 'Transformator: Wechselstrom in Primärspule erzeugt wechselndes B-Feld im Eisenkern → Induktion in Sekundärspule. U₂/U₁ = N₂/N₁ (Übersetzungsverhältnis). Hochspannungsübertragung: P = U·I. Bei hoher Spannung → kleiner Strom → P_Verlust = I²·R sinkt drastisch (quadratisch!). Verlustreduktion: 10× höhere Spannung → 100× weniger Leitungsverluste. Restliche Verluste im Transformator: Wirbelströme (durch Blechung minimiert), Hystereseverluste, Kupferverluste.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'schwingungen',
+    name: 'Schwingungen',
+    bpe: 'BPE 9',
+    icon: '〰️',
+    color: 'blue',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Harmonische Schwingungen, Federpendel, elektromagnetischer Schwingkreis.',
+    tags: ['Harmonisch', 'Pendel', 'LC-Kreis', 'Resonanz'],
+    theorie: [
+      {
+        title: 'Harmonische mechanische Schwingungen',
+        body: 'Das horizontale Federpendel ist das Grundmodell einer harmonischen Schwingung. Die Rückstellkraft ist proportional zur Auslenkung (F = −D·x). Die Schwingung wird durch sin/cos-Funktionen beschrieben.',
+        bullets: ['Auslenkung: s(t) = ŝ · sin(ω·t)', 'Geschwindigkeit: v(t) = ŝ·ω · cos(ω·t)', 'Beschleunigung: a(t) = −ŝ·ω² · sin(ω·t)', 'Kreisfrequenz: ω = √(D/m)', 'Periodendauer Federpendel: T = 2π·√(m/D)']
+      },
+      {
+        title: 'Elektromagnetischer Schwingkreis',
+        body: 'Im LC-Schwingkreis wechselt Energie zwischen elektrischem Feld des Kondensators und magnetischem Feld der Spule. Die Thomson-Formel gibt die Resonanzfrequenz an.',
+        bullets: ['Thomson-Formel: T = 2π·√(L·C)', 'Analogie: C ↔ 1/D (Federkonstante), L ↔ m', 'Energie: W_el = ½·C·U², W_mag = ½·L·I²', 'Gedämpfte Schwingung: Energie nimmt ab (Widerstand)']
+      }
+    ],
+    formeln: [
+      { name: 'Auslenkung', eq: 's(t) = ŝ · sin(ω·t)' },
+      { name: 'Kreisfrequenz', eq: 'ω = 2π/T = 2π·f' },
+      { name: 'T Federpendel', eq: 'T = 2π · √(m/D)' },
+      { name: 'T Fadenpendel', eq: 'T = 2π · √(l/g)' },
+      { name: 'Thomson-Formel', eq: 'T = 2π · √(L·C)' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Was ist die Periodendauer einer harmonischen Schwingung?',
+          options: ['Die Zeit für eine vollständige Schwingung', 'Die maximale Auslenkung', 'Die Frequenz der Schwingung', 'Die Amplitude'],
+          answer: 0,
+          feedback: 'Richtig! Die Periodendauer T ist die Zeit für eine vollständige Hin-und-Rückbewegung. Es gilt: f = 1/T (Frequenz) und ω = 2π/T (Kreisfrequenz).'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Federpendel (m = 0,4 kg, D = 40 N/m) schwingt. Wie groß ist die Periodendauer T?',
+          options: ['0,628 s', '6,28 s', '0,1 s', '3,14 s'],
+          answer: 0,
+          feedback: 'T = 2π·√(m/D) = 2π·√(0,4/40) = 2π·√(0,01) = 2π·0,1 ≈ 0,628 s'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Erkläre die Analogie zwischen mechanischem Federpendel und dem LC-Schwingkreis. Welche Größen entsprechen sich? Was passiert bei der Energiebetrachtung?',
+          solution: 'Analogiepaar: Federkonstante D ↔ 1/C (Kapazität), Masse m ↔ Induktivität L, Auslenkung x ↔ Ladung Q, Geschwindigkeit v ↔ Strom I. Energie: Beim Federpendel wechselt E zwischen E_kin (=½mv²) und E_spann (=½Dx²). Im LC-Kreis wechselt E zwischen W_mag (=½LI²) und W_el (=½Q²/C = ½CU²). Thomson-Formel T=2π√(LC) entspricht T=2π√(m/D). Diese Analogie erlaubt, Schwingungsphänomene in beiden Systemen mit denselben Gleichungen zu beschreiben.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'wellen',
+    name: 'Wellen',
+    bpe: 'BPE 10',
+    icon: '🌊',
+    color: 'yellow',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Mechanische und elektromagnetische Wellen, Interferenz, Beugung, Doppelspalt.',
+    tags: ['Interferenz', 'Beugung', 'Licht', 'Doppelspalt'],
+    theorie: [
+      {
+        title: 'Wellengrößen & Ausbreitung',
+        body: 'Eine Welle überträgt Energie ohne Massetransport. Transversalwellen schwingen senkrecht zur Ausbreitung (Lichtwellen), Longitudinalwellen parallel (Schall). Die Wellenlänge λ, Frequenz f und Ausbreitungsgeschwindigkeit c sind verknüpft.',
+        bullets: ['c = λ · f (Wellengleichung)', 'Transversal: Schwingung ⊥ Ausbreitung (Licht)', 'Longitudinal: Schwingung ∥ Ausbreitung (Schall)', 'Polarisation nur bei Transversalwellen möglich']
+      },
+      {
+        title: 'Interferenz & Beugung',
+        body: 'Wellen können sich überlagern (Superpositionsprinzip). Konstruktive Interferenz: Wellenberge treffen aufeinander, Amplitude verdoppelt sich. Destruktive Interferenz: Berg trifft Tal, Auslöschung. Am Doppelspalt entsteht ein Interferenzmuster.',
+        bullets: ['Konstruktiv: Δs = n·λ (n = 0,1,2,...)', 'Destruktiv: Δs = (n+½)·λ', 'Doppelspalt: d·sin(α) = n·λ', 'Huygens-Prinzip: Jeder Punkt ist Kugelwellenquelle', 'Stehende Welle: Überlagerung von hin- und rücklaufender Welle']
+      }
+    ],
+    formeln: [
+      { name: 'Wellengleichung', eq: 'c = λ · f' },
+      { name: 'Konstruktive Interferenz', eq: 'Δs = n · λ' },
+      { name: 'Destruktive Interferenz', eq: 'Δs = (n + ½) · λ' },
+      { name: 'Doppelspalt (Maxima)', eq: 'd · sin(α) = n · λ' },
+      { name: 'Lichtgeschwindigkeit', eq: 'c ≈ 3 · 10⁸ m/s' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Licht hat eine Wellenlänge von λ = 600 nm und breitet sich mit c = 3·10⁸ m/s aus. Wie groß ist die Frequenz?',
+          options: ['5·10¹⁴ Hz', '5·10⁻¹⁷ Hz', '1,8·10¹⁷ Hz', '5·10²² Hz'],
+          answer: 0,
+          feedback: 'f = c/λ = 3·10⁸ / 600·10⁻⁹ = 3·10⁸ / 6·10⁻⁷ = 5·10¹⁴ Hz (sichtbares Licht: 400–700 nm)'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Am Doppelspalt (d = 0,1 mm) trifft Licht (λ = 500 nm) auf. In welchem Winkel liegt das 1. Maximum?',
+          options: ['sin(α) = 0,005', 'sin(α) = 0,05', 'sin(α) = 0,5', 'sin(α) = 5'],
+          answer: 0,
+          feedback: 'd·sin(α) = n·λ → sin(α) = λ/d = 500·10⁻⁹ / 0,1·10⁻³ = 5·10⁻⁷ / 10⁻⁴ = 5·10⁻³ = 0,005 → α ≈ 0,29°'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Beschreibe das Entstehen eines Interferenzmusters am Doppelspalt und erkläre, wie man die Wellenlänge des Lichts damit bestimmen kann. Warum ist der Versuch ein Beleg für den Wellencharakter des Lichts?',
+          solution: 'Licht trifft auf zwei enge Spalte → nach Huygens-Prinzip gehen von jedem Spalt Kugelwellen aus. Diese überlagern sich. Wo Gangunterschied Δs = n·λ: konstruktive Interferenz (Helligkeit). Wo Δs = (n+½)·λ: destruktive Interferenz (Dunkel). Es entsteht helles und dunkles Streifenmuster. Wellenlänge bestimmbar: Abstand Maxima messen, Geometrie (Spaltabstand d, Schirmabstand L) → λ = d·sin(α)/n. Beweis Wellencharakter: Klassische Teilchen würden kein Interferenzmuster erzeugen (nur zwei Streifen), Wellen schon → Doppelspalt von Young (1801) bestätigte Wellenmodell des Lichts.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'quantenphysik',
+    name: 'Quantenphysik',
+    bpe: 'BPE 11',
+    icon: '🔬',
+    color: 'red',
+    school: 'tg',
+    schoolLabel: 'TG',
+    desc: 'Fotoeffekt, Welle-Teilchen-Dualismus, Atommodel, Heisenberg-Unschärfe.',
+    tags: ['Photoeffekt', 'Photon', 'de Broglie', 'Heisenberg'],
+    theorie: [
+      {
+        title: 'Quantennatur des Lichts – Photoeffekt',
+        body: 'Licht schlägt Elektronen aus einer Metalloberfläche (äußerer Photoeffekt). Entscheidend ist die Frequenz, nicht die Intensität. Das Photon-Modell erklärt dies: Photonen sind Lichtquanten mit E = h·f.',
+        bullets: ['E_Photon = h · f (Planck\'sche Konstante h = 6,626·10⁻³⁴ J·s)', 'E_kin = h·f − W_A (W_A = Austrittsarbeit)', 'Grenzfrequenz: f₀ = W_A/h', 'Photonenimpuls: p = h/λ (Compton-Effekt)']
+      },
+      {
+        title: 'Welle-Teilchen-Dualismus',
+        body: 'Elektronen zeigen am Doppelspalt Interferenz → Wellencharakter. Gleichzeitig wirken sie als Teilchen. De Broglie: Jedes Teilchen hat eine Materiewelle mit λ = h/p.',
+        bullets: ['de-Broglie-Wellenlänge: λ = h/p = h/(m·v)', 'Unschärferelation (Heisenberg): Δx·Δp ≥ h/(4π)', 'Folgerungen: Nichtkausalität, Nichtdeterminiertheit', 'Orbital: Wahrscheinlichkeitsverteilung des Elektrons']
+      }
+    ],
+    formeln: [
+      { name: 'Photonenenergie', eq: 'E = h · f = h·c/λ' },
+      { name: 'Planck-Konstante', eq: 'h = 6,626 · 10⁻³⁴ J·s' },
+      { name: 'Kinetische Energie (PE)', eq: 'E_kin = h·f − W_A' },
+      { name: 'de-Broglie-Wellenlänge', eq: 'λ = h / (m·v)' },
+      { name: 'Heisenberg (Ort/Impuls)', eq: 'Δx · Δp ≥ h / (4π)' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Beim Photoeffekt hängt die kinetische Energie der ausgelösten Elektronen ab von...',
+          options: ['der Frequenz (nicht der Intensität) des Lichts', 'der Intensität (nicht der Frequenz) des Lichts', 'sowohl Frequenz als auch Intensität gleich stark', 'nur von der Beleuchtungsdauer'],
+          answer: 0,
+          feedback: 'Richtig! Dies war Einsteins entscheidende Erkenntnis (Nobelpreis 1921): Nur die Frequenz (Energie pro Photon) entscheidet, ob und mit welcher Energie Elektronen ausgelöst werden. Mehr Intensität = mehr Elektronen, aber nicht mehr Energie pro Elektron.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Ein Photon hat λ = 400 nm. Wie groß ist seine Energie? (h = 6,63·10⁻³⁴ J·s, c = 3·10⁸ m/s)',
+          options: ['4,97·10⁻¹⁹ J', '4,97·10⁻²⁸ J', '1,66·10⁻³⁷ J', '7,50·10¹⁴ J'],
+          answer: 0,
+          feedback: 'E = h·c/λ = 6,63·10⁻³⁴ · 3·10⁸ / 400·10⁻⁹ = 1,989·10⁻²⁵ / 4·10⁻⁷ ≈ 4,97·10⁻¹⁹ J'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Diskutiere den Welle-Teilchen-Dualismus von Elektronen am Doppelspalt. Was passiert, wenn man nachschaut, durch welchen Spalt das Elektron geht? Welche philosophischen Konsequenzen hat das?',
+          solution: 'Elektronen-Doppelspaltversuch: Einzelne Elektronen erzeugen über viele Durchgänge ein Interferenzmuster → Wellencharakter. Einzelnes Elektron = Teilchen (landet punktförmig). Messung (welcher Spalt?): Sobald man beobachtet, durch welchen Spalt das Elektron geht, verschwindet das Interferenzmuster – nur zwei Streifen. Das Beobachten stört das System (Messproblem). Philosophische Konsequenzen: Nichtdeterminiertheit (Zufall, nicht Unwissenheit), Nichtlokalität, Nichtobjektivierbarkeit (kein "gleichzeitig Welle und Teilchen beobachten"). Kopenhagener Deutung: Quantenobjekte haben keine definierten Eigenschaften vor der Messung.'
+        }
+      ]
+    }
+  },
+  // 2BFS Topics
+  {
+    id: 'mechanik2bfs',
+    name: 'Mechanik (2BFS)',
+    bpe: 'LPE 1',
+    icon: '⚙️',
+    color: 'green',
+    school: '2bfs',
+    schoolLabel: '2BFS',
+    desc: 'Länge, Zeit, Masse, Geschwindigkeit, Beschleunigung, Kraft, Energie und Leistung – Grundlagen der Mechanik.',
+    tags: ['Kraft', 'Masse', 'Energie', 'Leistung'],
+    theorie: [
+      {
+        title: 'Physikalische Grundgrößen der Mechanik',
+        body: 'Die Mechanik beschreibt die Bewegung von Körpern und die wirkenden Kräfte. Grundgrößen: Länge (m), Zeit (s), Masse (kg). Daraus abgeleitet: Geschwindigkeit v = s/t, Beschleunigung a = Δv/Δt, Kraft F = m·a.',
+        bullets: ['Masse m [kg] – Maß für Trägheit (träge Masse)', 'Gewichtskraft F_G = m·g (schwere Masse)', 'Masse ≠ Gewicht! Masse ist konstant, Gewicht ortsabhängig', 'Im Alltag oft verwechselt: "100 kg wiegen" vs. "100 kg Masse haben"']
+      },
+      {
+        title: 'Energie und Leistung – Alltagsbezug',
+        body: 'Energie ist die Fähigkeit, Arbeit zu verrichten. Leistung beschreibt, wie schnell Energie umgewandelt wird. Energiesparlampen haben höheren Wirkungsgrad als Glühlampen. Elektrische Energie wird im Alltag in kWh gemessen.',
+        bullets: ['W = F · s (mechanische Arbeit)', 'P = W/t (Leistung in Watt)', 'E_elek = P · t (kWh = 3,6·10⁶ J)', 'Wirkungsgrad η = P_nutz/P_zu']
+      }
+    ],
+    formeln: [
+      { name: 'Geschwindigkeit', eq: 'v = s / t' },
+      { name: 'Beschleunigung', eq: 'a = Δv / Δt' },
+      { name: 'Kraft', eq: 'F = m · a' },
+      { name: 'Arbeit', eq: 'W = F · s' },
+      { name: 'Leistung', eq: 'P = W / t' },
+      { name: 'Gewichtskraft', eq: 'F_G = m · g' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Ein Auto fährt 120 km in 1,5 Stunden. Wie hoch ist seine Durchschnittsgeschwindigkeit?',
+          options: ['80 km/h', '180 km/h', '60 km/h', '120 km/h'],
+          answer: 0,
+          feedback: 'v = s/t = 120 km / 1,5 h = 80 km/h'
+        },
+        {
+          type: 'mc',
+          q: 'Was ist der Unterschied zwischen Masse und Gewichtskraft?',
+          options: ['Masse ist konstant, Gewichtskraft ist ortsabhängig', 'Gewichtskraft ist konstant, Masse ist ortsabhängig', 'Beides ist dasselbe', 'Masse ist größer als Gewichtskraft'],
+          answer: 0,
+          feedback: 'Richtig! Die Masse (kg) ist eine Materieeigenschaft und überall gleich. Die Gewichtskraft F_G = m·g hängt von g ab und ist auf dem Mond (g_Mond ≈ 1,6 m/s²) viel kleiner als auf der Erde.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'mc',
+          q: 'Eine Maschine leistet P = 500 W für t = 2 Minuten. Wie viel Energie wird umgesetzt?',
+          options: ['60.000 J', '1000 J', '250 J', '60 J'],
+          answer: 0,
+          feedback: 'W = P·t = 500 W · 120 s = 60.000 J = 60 kJ'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Ein Aufzug transportiert m = 500 kg um h = 20 m nach oben in t = 30 s. Berechne die Leistung und diskutiere, welche weiteren Energieformen im realen System eine Rolle spielen.',
+          solution: 'Theoretische Leistung: W = m·g·h = 500·9,81·20 = 98.100 J ≈ 98 kJ. P = W/t = 98100/30 ≈ 3270 W ≈ 3,3 kW. Real kommen hinzu: Reibungsverluste in Führungsschienen und Motor (~15%), Trägheit des Gegengewichts (oft vorhanden → Energie wird gespart), elektrische Verluste im Motor. Reale Leistungsaufnahme ≈ 4-5 kW. Energiesparmaßnahme: Gegengewicht entspricht dem halben Aufzugsgewicht.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'elektrizitaet2bfs',
+    name: 'Elektrizität & Magnetismus',
+    bpe: 'LPE 1',
+    icon: '🔋',
+    color: 'yellow',
+    school: '2bfs',
+    schoolLabel: '2BFS',
+    desc: 'Ladung, Stromstärke, Spannung, Widerstand, Leistung – Grundlagen der Elektrizitätslehre.',
+    tags: ['Ohm', 'Strom', 'Spannung', 'Widerstand'],
+    theorie: [
+      {
+        title: 'Grundgrößen der Elektrizitätslehre',
+        body: 'Elektrischer Strom ist die gerichtete Bewegung von Ladungsträgern. Ladung Q [C], Stromstärke I [A] = Q/t, Spannung U [V] (Antrieb), Widerstand R [Ω] (Hemmung). Das Ohmsche Gesetz verknüpft diese Größen.',
+        bullets: ['I = Q/t (Stromstärke = Ladung pro Zeit)', 'U = R · I (Ohmsches Gesetz)', 'P = U · I (elektrische Leistung)', 'W = U · I · t (elektrische Energie)']
+      },
+      {
+        title: 'Magnetismus & Elektromagnet',
+        body: 'Dauermagnete haben Nord- und Südpol. Gleichnamige Pole stoßen ab, ungleichnamige ziehen an. Ein stromdurchflossener Leiter erzeugt ein Magnetfeld (Elektromagnet). Anwendungen: Türklingel, Relais, Elektromotor.',
+        bullets: ['Magnetfeld um Leiter: konzentrische Kreise', 'Rechte-Hand-Regel: Daumen = Strom, Finger = Feldrichtung', 'Elektromagnet: verstärkt durch Eisenkern', 'Anwendungen: Lautsprecher, Kran, MRT']
+      }
+    ],
+    formeln: [
+      { name: 'Ohmsches Gesetz', eq: 'U = R · I' },
+      { name: 'Elektrische Leistung', eq: 'P = U · I' },
+      { name: 'Elektrische Energie', eq: 'W = U · I · t = P · t' },
+      { name: 'Stromstärke', eq: 'I = Q / t' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'An einem Widerstand R = 10 Ω liegt eine Spannung U = 5 V an. Wie groß ist der Strom?',
+          options: ['0,5 A', '2 A', '50 A', '0,05 A'],
+          answer: 0,
+          feedback: 'I = U/R = 5V / 10Ω = 0,5 A'
+        },
+        {
+          type: 'mc',
+          q: 'Welche elektrische Leistung nimmt ein Gerät auf, das bei U = 230 V einen Strom von I = 2 A zieht?',
+          options: ['460 W', '115 W', '232 W', '46 W'],
+          answer: 0,
+          feedback: 'P = U · I = 230 V · 2 A = 460 W'
+        }
+      ],
+      afb2: [
+        {
+          type: 'open',
+          q: 'Ein Elektrogerät (P = 2 kW) läuft täglich 3 Stunden. Wie viel Energie verbraucht es pro Monat (30 Tage) in kWh? Was kostet das bei 0,35 €/kWh?',
+          solution: 'Energie/Tag: W = P·t = 2 kW · 3 h = 6 kWh. Pro Monat: 6 kWh · 30 = 180 kWh. Kosten: 180 kWh · 0,35 €/kWh = 63 €/Monat.'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Erkläre, warum beim Hausbrand oft die Elektrik die Ursache ist. Welche physikalischen Gesetze sind relevant, und welche Sicherheitsmechanismen gibt es?',
+          solution: 'Ursache: Überstrom durch Kurzschluss oder Überlastung. P = I²·R → bei großem Strom entwickeln Kabel viel Wärme (Joule-Wärme). Wenn P_Wärme > Wärmeableitung → Kabel erhitzt sich, Isolation schmilzt/brennt. Ohmsches Gesetz: Kurzschluss = R → 0 → I → ∞. Sicherungsmechanismen: Schmelzsicherung (schmilzt bei Überstrom), Leitungsschutzschalter (magnetisch/thermisch), FI-Schalter (erkennt Fehlerstrom), Überspannungsschutz. Brandschutz: Feuerhemmende Kabelisolierungen, korrekte Absicherung nach DIN VDE.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'optik2bfs',
+    name: 'Optik',
+    bpe: 'LPE 3',
+    icon: '🔭',
+    color: 'blue',
+    school: '2bfs',
+    schoolLabel: '2BFS',
+    desc: 'Lichtquellen, Ausbreitung, Reflexion, Brechung, Farben des Lichts.',
+    tags: ['Reflexion', 'Brechung', 'Farben', 'Optik'],
+    theorie: [
+      {
+        title: 'Lichtausbreitung & Reflexion',
+        body: 'Licht breitet sich in homogenen Medien geradlinig aus (Lichtstrahl). Reflexionsgesetz: Einfallswinkel = Ausfallswinkel (bezogen auf das Lot). Spiegelbilder entstehen durch Reflexion (virtuelles Bild).',
+        bullets: ['Reflexionsgesetz: α = α\' (Ein- = Ausfallswinkel)', 'Ebener Spiegel: virtuelles, aufrechtes, seitenverkehrtes Bild', 'Diffuse Reflexion: raue Oberfläche (Papier)', 'Gerichtete Reflexion: glatte Oberfläche (Spiegel)']
+      },
+      {
+        title: 'Brechung & Farben',
+        body: 'Beim Übergang zwischen zwei Medien ändert Licht seine Ausbreitungsrichtung (Brechung). Das Snellius-Gesetz beschreibt dies quantitativ. Weißes Licht wird am Prisma in seine Spektralfarben zerlegt (Dispersion).',
+        bullets: ['Snellius: n₁·sin(α) = n₂·sin(β)', 'n = Brechungsindex (Luft: n≈1, Glas: n≈1,5)', 'Totalreflexion: wenn α > Grenzwinkel', 'Prisma: Dispersion → Regenbogenfarben', 'Regenbogen: Brechung + Reflexion + Dispersion in Tropfen']
+      }
+    ],
+    formeln: [
+      { name: 'Snelliussches Brechungsgesetz', eq: 'n₁·sin(α) = n₂·sin(β)' },
+      { name: 'Brechungsindex', eq: 'n = c / c_Medium' },
+      { name: 'Reflexionsgesetz', eq: 'α_ein = α_aus' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Ein Lichtstrahl trifft unter α = 30° (zum Lot) auf eine Wasseroberfläche. Wasser hat n = 1,33. Wie groß ist der Brechungswinkel β in Wasser?',
+          options: ['≈ 22°', '≈ 30°', '≈ 45°', '≈ 60°'],
+          answer: 0,
+          feedback: 'sin(β) = n_Luft·sin(α)/n_Wasser = 1·sin(30°)/1,33 = 0,5/1,33 ≈ 0,376 → β ≈ 22°. Licht wird beim Eintauchen ins Wasser zum Lot hin gebrochen.'
+        }
+      ],
+      afb2: [
+        {
+          type: 'open',
+          q: 'Erkläre die Entstehung eines Regenbogens mithilfe der optischen Gesetze. Welche Schritte finden in einem Wassertropfen statt?',
+          solution: 'Regenbogen: (1) Brechung beim Eintritt in den Tropfen (Dispersion: verschiedene Farben werden unterschiedlich stark gebrochen). (2) Totalreflexion an der Tropfenrückseite. (3) Brechung beim Austritt (erneute Dispersion). Ergebnis: Weiß aufgefächert, rot außen (~42°), violett innen (~40°). Voraussetzung: Sonne im Rücken, Regen vor einem. Doppelter Regenbogen: zweifache Reflexion, Farbreihenfolge umgekehrt.'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Glasfaserkabel nutzen Totalreflexion für die Datenübertragung. Erkläre das Prinzip und diskutiere Vor- und Nachteile gegenüber Kupferkabeln.',
+          solution: 'Totalreflexion: Trifft Licht im optisch dichteren Medium (n₂) auf Grenzfläche zu dünnerem (n₁) unter Winkel > Grenzwinkel α_G = arcsin(n₁/n₂), wird es vollständig reflektiert – kein Energieverlust. Im Glasfaserkabel bleibt Lichtstrahl durch Totalreflexion im Kern. Vorteile gg. Kupfer: Viel höhere Bandbreite (Licht >> Elektronen), kein elektromagnetisches Rauschen, geringere Dämpfung über lange Strecken, kein Kurzschlussrisiko, leichter. Nachteile: Teurer in der Verlegung, spröde, schlechtere Biegeradius-Toleranz, Spleiß-Verbindungen aufwändig.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'waerme2bfs',
+    name: 'Wärmelehre',
+    bpe: 'LPE 3',
+    icon: '🌡️',
+    color: 'red',
+    school: '2bfs',
+    schoolLabel: '2BFS',
+    desc: 'Temperatur, Wärme, Wärmeübertragung, Aggregatzustände, Wärmedehnung.',
+    tags: ['Temperatur', 'Wärme', 'Aggregatzustand', 'Dehnung'],
+    theorie: [
+      {
+        title: 'Temperatur & Wärme',
+        body: 'Temperatur ist ein Maß für die mittlere kinetische Energie der Moleküle. Wärme Q ist Energie, die aufgrund von Temperaturdifferenzen übertragen wird. Wärme fließt immer von warm nach kalt (2. Hauptsatz).',
+        bullets: ['T [K] = ϑ [°C] + 273,15 (Kelvin-Skala)', 'Q = m · c · ΔT (spez. Wärmekapazität)', 'Wasser: c = 4187 J/(kg·K) – sehr hoch!', 'Wärmeübertragung: Leitung, Konvektion, Strahlung']
+      },
+      {
+        title: 'Aggregatzustände & Anomalie des Wassers',
+        body: 'Beim Schmelzen und Verdampfen bleibt die Temperatur konstant – Energie wird für Phasenwechsel verwendet (latente Wärme). Wasser hat bei 4 °C seine größte Dichte (Anomalie) – Eis schwimmt oben.',
+        bullets: ['Schmelzwärme Eis: L_S = 334.000 J/kg', 'Verdampfungswärme Wasser: L_V = 2,26·10⁶ J/kg', 'Anomalie: Wasser bei 4°C dichteste → Gewässer frieren von oben zu', 'Bedeutung: Fische überleben den Winter']
+      }
+    ],
+    formeln: [
+      { name: 'Wärmemenge', eq: 'Q = m · c · ΔT' },
+      { name: 'Kelvin-Celsius', eq: 'T[K] = ϑ[°C] + 273,15' },
+      { name: 'Wärmedehnung (linear)', eq: 'Δl = l₀ · α · ΔT' },
+      { name: 'Schmelzwärme', eq: 'Q = m · L_S' }
+    ],
+    aufgaben: {
+      afb1: [
+        {
+          type: 'mc',
+          q: 'Wie viel Wärmeenergie braucht man, um 2 kg Wasser von 20 °C auf 100 °C zu erwärmen? (c_Wasser = 4200 J/(kg·K))',
+          options: ['672.000 J', '840.000 J', '168.000 J', '336.000 J'],
+          answer: 0,
+          feedback: 'Q = m·c·ΔT = 2·4200·(100-20) = 2·4200·80 = 672.000 J = 672 kJ'
+        }
+      ],
+      afb2: [
+        {
+          type: 'open',
+          q: 'Erkläre die Anomalie des Wassers und ihre ökologische Bedeutung. Warum frieren Seen von oben zu und nicht von unten?',
+          solution: 'Normales Verhalten: Flüssigkeiten werden beim Abkühlen dichter und sinken. Wasser: Zwischen 4°C und 0°C nimmt die Dichte wieder ab (H₂O-Moleküle bilden Kristallgitter mit viel Leerraum → Eis schwimmt). Beim Abkühlen: 4°C-Wasser ist am dichtesten und sinkt ab. Kälteres Wasser schwimmt oben. Das Eis bildet sich oben → wirkt als Isolationsschicht. Darunter bleibt Wasser bei 4°C → Fische und andere Organismen überleben den Winter.'
+        }
+      ],
+      afb3: [
+        {
+          type: 'open',
+          q: 'Beschreibe das Prinzip einer Wärmepumpe und eines Kühlschranks. Wie unterscheiden sie sich in der Nutzungsrichtung? Warum ist eine Wärmepumpe effizienter als eine Elektroheizung?',
+          solution: 'Prinzip: Kältemittel verdampft bei niedrigem Druck (nimmt Wärme aus Umgebung auf, Q_kalt), wird komprimiert (Kompressor verbraucht Strom W), kondensiert bei hohem Druck (gibt Wärme Q_warm ab). Q_warm = Q_kalt + W. Kühlschrank: Q_kalt = Nutzenergie (Innenraum kühlen), Q_warm wird an Raumluft abgegeben. Wärmepumpe: Q_warm = Nutzenergie (Heizen), Q_kalt aus Erdreich/Luft. Effizienz: COP = Q_warm/W > 1 (oft 3-5). Elektroheizung: COP = 1 (nur elektrische Energie → Wärme). Wärmepumpe nutzt kostenlose Umweltwärme zusätzlich.'
+        }
+      ]
+    }
+  }
+];
+
+// ============================================================
+// FORMULA SHEET DATA
+// ============================================================
+const formulaSheets = [
+  {
+    title: 'Kinematik & Dynamik',
+    formulas: [
+      { name: 'Gleichf. Bewegung', eq: 's = v · t' },
+      { name: 'Impuls', eq: 'p = m · v' },
+      { name: 'Grundgesetz (Newton 2)', eq: 'F = m · a' },
+      { name: 'Kraftstoß', eq: 'Δp = F · Δt' },
+      { name: 'Weg (Beschleunigung)', eq: 's = ½ · a · t²' },
+      { name: 'Freier Fall', eq: 'h = ½ · g · t²' }
+    ]
+  },
+  {
+    title: 'Energie & Leistung',
+    formulas: [
+      { name: 'Kinetische Energie', eq: 'E_kin = ½ · m · v²' },
+      { name: 'Lageenergie', eq: 'E_pot = m · g · h' },
+      { name: 'Leistung', eq: 'P = W / t' },
+      { name: 'Wirkungsgrad', eq: 'η = W_nutz / W_zu' }
+    ]
+  },
+  {
+    title: 'Elektrizität',
+    formulas: [
+      { name: 'Ohmsches Gesetz', eq: 'U = R · I' },
+      { name: 'Elektrische Leistung', eq: 'P = U · I = I²·R' },
+      { name: 'Coulombsches Gesetz', eq: 'F = k · Q₁·Q₂/r²' },
+      { name: 'Elektrische Feldstärke', eq: 'E = F/q = U/d' },
+      { name: 'Kapazität', eq: 'C = Q/U' }
+    ]
+  },
+  {
+    title: 'Magnetismus & Induktion',
+    formulas: [
+      { name: 'Kraft auf Leiter', eq: 'F = B · I · l' },
+      { name: 'Lorentzkraft', eq: 'F_L = q · v · B' },
+      { name: 'Magnetischer Fluss', eq: 'Φ = B · A · cos(α)' },
+      { name: 'Induktionsgesetz', eq: 'U_ind = −N · ΔΦ/Δt' },
+      { name: 'Selbstinduktion', eq: 'U_ind = −L · ΔI/Δt' }
+    ]
+  },
+  {
+    title: 'Schwingungen & Wellen',
+    formulas: [
+      { name: 'Federpendel', eq: 'T = 2π · √(m/D)' },
+      { name: 'Fadenpendel', eq: 'T = 2π · √(l/g)' },
+      { name: 'Thomson-Formel', eq: 'T = 2π · √(L·C)' },
+      { name: 'Wellengleichung', eq: 'c = λ · f' },
+      { name: 'Doppelspalt Maxima', eq: 'd · sin(α) = n · λ' }
+    ]
+  },
+  {
+    title: 'Quantenphysik',
+    formulas: [
+      { name: 'Photonenenergie', eq: 'E = h · f' },
+      { name: 'Planck-Konstante', eq: 'h = 6,626 · 10⁻³⁴ J·s' },
+      { name: 'de-Broglie', eq: 'λ = h / (m·v)' },
+      { name: 'Heisenberg', eq: 'Δx · Δp ≥ h/(4π)' }
+    ]
+  },
+  {
+    title: 'Gravitationsfeld',
+    formulas: [
+      { name: 'Gravitationsgesetz', eq: 'F = G · m₁·m₂/r²' },
+      { name: 'G', eq: 'G = 6,674·10⁻¹¹ N·m²/kg²' },
+      { name: 'Feldstärke', eq: 'g = G·M/r²' }
+    ]
+  },
+  {
+    title: 'Wärmelehre',
+    formulas: [
+      { name: 'Wärmemenge', eq: 'Q = m · c · ΔT' },
+      { name: 'Kelvin-Celsius', eq: 'T[K] = ϑ[°C] + 273,15' },
+      { name: 'Wärmedehnung', eq: 'Δl = l₀ · α · ΔT' },
+      { name: 'Schmelzwärme', eq: 'Q = m · L_S' }
+    ]
+  }
+];
+
+// ============================================================
+// QUICK QUIZ DATA (mixed, all levels)
+// ============================================================
+const quickQuizQuestions = [
+  { q: 'Welche physikalische Größe hat die Einheit kg·m/s?', options: ['Impuls', 'Kraft', 'Energie', 'Leistung'], answer: 0 },
+  { q: 'In welchem Diagrammtyp entspricht die Steigung der Geschwindigkeit?', options: ['s(t)-Diagramm', 'v(t)-Diagramm', 'a(t)-Diagramm', 'F(t)-Diagramm'], answer: 0 },
+  { q: 'Was besagt der Energieerhaltungssatz?', options: ['Energie kann weder erzeugt noch vernichtet werden', 'Energie nimmt immer ab', 'Energie nimmt bei Reibung zu', 'Energie ist immer kinetisch'], answer: 0 },
+  { q: 'Welche Einheit hat die magnetische Flussdichte B?', options: ['Tesla (T)', 'Weber (Wb)', 'Henry (H)', 'Farad (F)'], answer: 0 },
+  { q: 'Was beschreibt die Lorentzkraft?', options: ['Kraft auf eine bewegte Ladung im Magnetfeld', 'Kraft zwischen zwei Ladungen', 'Gewichtskraft im Gravitationsfeld', 'Zentripetalkraft bei Kreisbewegung'], answer: 0 },
+  { q: 'Welche Wellenart kann polarisiert werden?', options: ['Transversalwellen', 'Longitudinalwellen', 'Beide', 'Keine'], answer: 0 },
+  { q: 'Was ist die de-Broglie-Wellenlänge?', options: ['λ = h/(m·v)', 'λ = h·f', 'λ = m·v/h', 'λ = c/f'], answer: 0 },
+  { q: 'Welches Gesetz verbindet Strom, Spannung und Widerstand?', options: ['Ohmsches Gesetz', 'Kirchhoffs Gesetz', 'Faradays Gesetz', 'Lenz\'sche Regel'], answer: 0 },
+  { q: 'Die Thomson-Formel T = 2π√(LC) gilt für...', options: ['Den elektromagnetischen Schwingkreis', 'Das Federpendel', 'Das Fadenpendel', 'Die Kreisbewegung'], answer: 0 },
+  { q: 'Beim Photoeffekt hängt die Energie der ausgelösten Elektronen von ... ab.', options: ['der Frequenz des Lichts', 'der Intensität des Lichts', 'der Beleuchtungsdauer', 'der Farbe der Metalloberfläche'], answer: 0 }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentTopic = null;
+let currentLevel = 'afb1';
+let quizAnswers = {};
+let quickQuizAnswers = {};
+let currentQuickQuizIdx = 0;
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+
+function renderTopics(filter = 'all') {
+  const grid = document.getElementById('topic-grid');
+  grid.innerHTML = '';
+  topics.filter(t => filter === 'all' || t.school === filter).forEach(topic => {
+    const card = document.createElement('div');
+    card.className = `topic-card ${topic.color}`;
+    card.innerHTML = `
+      <div class="topic-header">
+        <span class="topic-icon">${topic.icon}</span>
+        <span class="topic-bpe">${topic.bpe}</span>
+      </div>
+      <div class="topic-name">${topic.name}</div>
+      <div style="margin-bottom:8px"><span class="badge badge-${topic.school}">${topic.schoolLabel}</span></div>
+      <div class="topic-desc">${topic.desc}</div>
+      <div class="topic-tags">${topic.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    `;
+    card.addEventListener('click', () => openTopic(topic));
+    grid.appendChild(card);
+  });
+}
+
+function renderFormulas() {
+  const grid = document.getElementById('formula-grid');
+  grid.innerHTML = '';
+  formulaSheets.forEach(sheet => {
+    const card = document.createElement('div');
+    card.className = 'formula-card';
+    card.innerHTML = `
+      <div class="formula-card-title">${sheet.title}</div>
+      ${sheet.formulas.map(f => `
+        <div class="formula-entry">
+          <span class="formula-name">${f.name}</span>
+          <span class="formula-eq">${f.eq}</span>
+        </div>
+      `).join('')}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderQuickQuiz() {
+  const container = document.getElementById('quick-quiz-content');
+  let score = Object.values(quickQuizAnswers).filter(a => a.correct).length;
+  let answered = Object.keys(quickQuizAnswers).length;
+  
+  let html = `
+    <div style="display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+      <div class="theory-block" style="flex:1;min-width:200px;text-align:center">
+        <h3>Fortschritt</h3>
+        <div style="font-family:'Space Mono',monospace;font-size:24px;color:var(--accent)">${answered}/${quickQuizQuestions.length}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar" style="width:${(answered/quickQuizQuestions.length)*100}%"></div></div>
+      </div>
+      <div class="theory-block" style="flex:1;min-width:200px;text-align:center">
+        <h3>Richtige Antworten</h3>
+        <div style="font-family:'Space Mono',monospace;font-size:24px;color:var(--accent3)">${score}/${answered||1}</div>
+      </div>
+    </div>
+  `;
+  
+  quickQuizQuestions.forEach((q, idx) => {
+    const answered_q = quickQuizAnswers[idx];
+    html += `<div class="question-card">
+      <div class="q-number">FRAGE ${idx+1} / ${quickQuizQuestions.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-options">
+        ${q.options.map((opt, oi) => {
+          let cls = '';
+          if (answered_q !== undefined) {
+            if (oi === q.answer) cls = 'correct';
+            else if (oi === answered_q.selected) cls = 'wrong';
+          }
+          return `<button class="q-option ${cls}" onclick="answerQuick(${idx},${oi})" ${answered_q !== undefined ? 'disabled' : ''}>${opt}</button>`;
+        }).join('')}
+      </div>
+      ${answered_q !== undefined ? `<div class="feedback-box show ${answered_q.correct ? 'correct' : 'wrong'}">
+        ${answered_q.correct ? '✅ Richtig!' : `❌ Falsch. Die richtige Antwort wäre: <strong>${q.options[q.answer]}</strong>`}
+      </div>` : ''}
+    </div>`;
+  });
+  
+  html += `<div class="quiz-actions">
+    <button class="btn btn-primary" onclick="resetQuickQuiz()">🔄 Quiz neu starten</button>
+  </div>`;
+  
+  container.innerHTML = html;
+}
+
+function answerQuick(qIdx, optIdx) {
+  const q = quickQuizQuestions[qIdx];
+  quickQuizAnswers[qIdx] = { selected: optIdx, correct: optIdx === q.answer };
+  renderQuickQuiz();
+  // scroll to this question
+  document.querySelectorAll('#quick-quiz-content .question-card')[qIdx]?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function resetQuickQuiz() {
+  quickQuizAnswers = {};
+  renderQuickQuiz();
+}
+
+// ============================================================
+// TOPIC MODAL
+// ============================================================
+
+function openTopic(topic) {
+  currentTopic = topic;
+  currentLevel = 'afb1';
+  quizAnswers = {};
+  
+  document.getElementById('modal-title').textContent = topic.name;
+  document.getElementById('modal-subtitle').textContent = `${topic.bpe} · ${topic.schoolLabel} · ${topic.tags.join(' · ')}`;
+  
+  renderTheorie(topic);
+  renderTopicFormulas(topic);
+  renderAufgaben(topic, 'afb1');
+  
+  // reset tabs
+  document.querySelectorAll('.modal-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  document.querySelectorAll('#modal .content-section').forEach((s,i) => s.classList.toggle('active', i===0));
+  
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modal').scrollTop = 0;
+}
+
+function renderTheorie(topic) {
+  const container = document.getElementById('tab-theorie');
+  let html = '';
+  topic.theorie.forEach(block => {
+    html += `<div class="theory-block">
+      <h3>${block.title}</h3>
+      <p>${block.body}</p>
+      <ul>${block.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderTopicFormulas(topic) {
+  const container = document.getElementById('tab-formeln');
+  let html = '<div class="formula-grid">';
+  html += `<div class="formula-card">
+    <div class="formula-card-title">${topic.name}</div>
+    ${topic.formeln.map(f => `
+      <div class="formula-entry">
+        <span class="formula-name">${f.name}</span>
+        <span class="formula-eq">${f.eq}</span>
+      </div>
+    `).join('')}
+  </div>`;
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderAufgaben(topic, level) {
+  const container = document.getElementById('tab-aufgaben');
+  const questions = topic.aufgaben[level] || [];
+  
+  let html = `
+    <div class="quiz-level-tabs">
+      <button class="level-tab afb1 ${level==='afb1'?'active':''}" onclick="switchLevel('afb1')">
+        🟢 AFB I – Grundwissen
+      </button>
+      <button class="level-tab afb2 ${level==='afb2'?'active':''}" onclick="switchLevel('afb2')">
+        🔵 AFB II – Anwenden
+      </button>
+      <button class="level-tab afb3 ${level==='afb3'?'active':''}" onclick="switchLevel('afb3')">
+        🔴 AFB III – Problemlösen
+      </button>
+    </div>
+    <div style="margin-bottom:20px;padding:12px 16px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text-muted)">
+      ${level==='afb1' ? '🟢 <strong style="color:var(--accent3)">Anforderungsbereich I:</strong> Wiedergeben und Beschreiben – Grundwissen abrufen.' : ''}
+      ${level==='afb2' ? '🔵 <strong style="color:var(--accent)">Anforderungsbereich II:</strong> Auswählen, Verarbeiten, Anwenden – bekannte Zusammenhänge auf neue Situationen übertragen.' : ''}
+      ${level==='afb3' ? '🔴 <strong style="color:var(--accent2)">Anforderungsbereich III:</strong> Selbstständige Problemlösung, Bewerten, Verallgemeinern.' : ''}
+    </div>
+  `;
+  
+  if (!questions.length) {
+    html += '<div class="theory-block"><p>Für dieses Level gibt es noch keine Aufgaben.</p></div>';
+  } else {
+    questions.forEach((q, idx) => {
+      const qKey = `${level}_${idx}`;
+      const answered = quizAnswers[qKey];
+      
+      if (q.type === 'mc') {
+        html += `<div class="question-card">
+          <div class="q-number">AUFGABE ${idx+1}</div>
+          <div class="q-text">${q.q}</div>
+          <div class="q-options">
+            ${q.options.map((opt, oi) => {
+              let cls = '';
+              if (answered !== undefined) {
+                if (oi === q.answer) cls = 'correct';
+                else if (oi === answered) cls = 'wrong';
+              }
+              return `<button class="q-option ${cls}" onclick="answerMC('${qKey}', ${oi}, ${q.answer})" ${answered !== undefined ? 'disabled' : ''}>${opt}</button>`;
+            }).join('')}
+          </div>
+          ${answered !== undefined ? `
+          <div class="feedback-box show ${answered === q.answer ? 'correct' : 'wrong'}">
+            ${answered === q.answer ? '✅ Richtig!' : `❌ Falsch. `}${answered !== q.answer ? `<strong>Richtig wäre: ${q.options[q.answer]}</strong><br>` : ''}${q.feedback}
+          </div>` : ''}
+        </div>`;
+      } else if (q.type === 'open') {
+        html += `<div class="question-card">
+          <div class="q-number">AUFGABE ${idx+1} – Offene Frage</div>
+          <div class="q-text">${q.q}</div>
+          <div class="open-question">
+            <textarea id="oa_${qKey}" placeholder="Schreibe deine Antwort hier..."></textarea>
+          </div>
+          <div class="quiz-actions">
+            <button class="btn btn-primary btn-sm" onclick="showSolution('${qKey}')">💡 Musterlösung zeigen</button>
+          </div>
+          <div class="feedback-box" id="sol_${qKey}">
+            <strong>📝 Musterlösung:</strong><br><br>${q.solution}
+          </div>
+        </div>`;
+      }
+    });
+  }
+  
+  container.innerHTML = html;
+}
+
+function answerMC(qKey, selected, correct) {
+  quizAnswers[qKey] = selected;
+  renderAufgaben(currentTopic, currentLevel);
+  // restore scroll position by re-rendering and scrolling
+}
+
+function showSolution(qKey) {
+  const box = document.getElementById(`sol_${qKey}`);
+  if (box) {
+    box.classList.toggle('show');
+    if (box.classList.contains('show')) {
+      box.classList.add('correct');
+    }
+  }
+}
+
+function switchLevel(level) {
+  currentLevel = level;
+  quizAnswers = {};
+  renderAufgaben(currentTopic, level);
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#modal .content-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function closeModal(event) {
+  if (event.target === document.getElementById('overlay')) {
+    closeModalDirect();
+  }
+}
+
+function closeModalDirect() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+
+function filterTopics(filter, btn) {
+  document.querySelectorAll('.school-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderTopics(filter);
+}
+
+function showSection(name) {
+  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`nav-${name}`).classList.add('active');
+}
+
+function startApp(section) {
+  document.getElementById('hero').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  showSection(section);
+  
+  // Update nav
+  document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+  const navBtn = document.getElementById(`nav-${section}`);
+  if (navBtn) navBtn.classList.add('active');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderTopics();
+  renderFormulas();
+  renderQuickQuiz();
+});
+
+// Keyboard ESC to close modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModalDirect();
+});
+</script>
+</body>
+</html>
