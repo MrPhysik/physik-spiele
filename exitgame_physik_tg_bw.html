@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Game – Physik TG BW Abschlussprüfung</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oxanium:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1628;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --warn: #ffcc00;
+    --text: #c8d8e8;
+    --dim: #4a6080;
+    --correct: #39ff14;
+    --wrong: #ff3355;
+    --font-main: 'Oxanium', sans-serif;
+    --font-mono: 'Share Tech Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0,80,150,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.05) 0%, transparent 50%);
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  #app {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 24px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+  .header-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(0,212,255,0.4);
+    letter-spacing: 1px;
+  }
+  .header-sub {
+    font-size: 13px;
+    color: var(--dim);
+    margin-top: 6px;
+    font-family: var(--font-mono);
+  }
+
+  /* HUD BAR */
+  .hud {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .hud-cell {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 4px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hud-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+  .hud-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .hud-value {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .hud-cell.timer-cell .hud-value { color: var(--warn); }
+  .hud-cell.score-cell .hud-value { color: var(--accent3); }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transition: width 0.5s ease;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* STAGE INDICATOR */
+  .stages {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .stage-dot {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.4s, box-shadow 0.4s;
+    min-width: 20px;
+  }
+  .stage-dot.done { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+  .stage-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  /* MISSION CARD */
+  .mission-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px 28px 24px;
+    margin-bottom: 20px;
+    position: relative;
+    animation: cardIn 0.4s ease;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .mission-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .mission-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding: 4px 10px;
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 3px;
+    background: rgba(0,212,255,0.06);
+  }
+  .afb-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    font-family: var(--font-mono);
+    font-weight: bold;
+  }
+  .afb-I  { background: rgba(57,255,20,0.15);  color: var(--accent3); border: 1px solid rgba(57,255,20,0.3); }
+  .afb-II { background: rgba(255,204,0,0.15);  color: var(--warn);    border: 1px solid rgba(255,204,0,0.3); }
+  .afb-III{ background: rgba(255,107,53,0.15); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+
+  .question-text {
+    font-size: clamp(15px, 2.5vw, 18px);
+    font-weight: 600;
+    color: #e8f4ff;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  .question-hint {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 22px;
+    line-height: 1.5;
+  }
+
+  /* FORMULA BLOCK */
+  .formula {
+    font-family: var(--font-mono);
+    background: rgba(0,212,255,0.05);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 4px 4px 0;
+    padding: 10px 14px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+
+  /* ANSWER OPTIONS */
+  .options {
+    display: grid;
+    gap: 10px;
+  }
+  .option-btn {
+    background: rgba(30,58,95,0.3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: var(--font-main);
+    font-size: 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.08);
+    transform: translateX(4px);
+    box-shadow: -3px 0 0 var(--accent);
+  }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct {
+    border-color: var(--correct);
+    background: rgba(57,255,20,0.1);
+    color: var(--correct);
+    box-shadow: 0 0 12px rgba(57,255,20,0.2);
+  }
+  .option-btn.wrong {
+    border-color: var(--wrong);
+    background: rgba(255,51,85,0.1);
+    color: var(--wrong);
+  }
+  .option-letter {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--dim);
+    min-width: 20px;
+    font-weight: bold;
+  }
+  .option-btn.correct .option-letter { color: var(--correct); }
+  .option-btn.wrong .option-letter { color: var(--wrong); }
+
+  /* INPUT ANSWER */
+  .input-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .answer-input {
+    flex: 1;
+    background: rgba(0,212,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .answer-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,212,255,0.15); }
+  .answer-input.correct { border-color: var(--correct); }
+  .answer-input.wrong   { border-color: var(--wrong); }
+  .submit-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 22px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .submit-btn:hover { background: #fff; transform: scale(1.02); }
+
+  /* FEEDBACK */
+  .feedback {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.6;
+    animation: fadeIn 0.3s ease;
+    display: none;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .feedback.show { display: block; }
+  .feedback.correct {
+    background: rgba(57,255,20,0.08);
+    border: 1px solid rgba(57,255,20,0.4);
+    color: var(--correct);
+  }
+  .feedback.wrong {
+    background: rgba(255,51,85,0.08);
+    border: 1px solid rgba(255,51,85,0.4);
+    color: #ff8fa0;
+  }
+  .feedback strong { color: #fff; }
+
+  /* NAV BUTTON */
+  .nav-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+  .next-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 11px 28px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:hover {
+    background: var(--accent);
+    color: #000;
+    box-shadow: 0 0 16px rgba(0,212,255,0.4);
+  }
+
+  /* INTRO / END SCREENS */
+  .screen {
+    text-align: center;
+    padding: 40px 20px;
+    animation: cardIn 0.5s ease;
+  }
+  .screen-icon {
+    font-size: 52px;
+    margin-bottom: 20px;
+    display: block;
+    filter: drop-shadow(0 0 16px rgba(0,212,255,0.5));
+  }
+  .screen h2 {
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 12px;
+    text-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .screen p {
+    color: var(--dim);
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto 24px;
+    font-family: var(--font-mono);
+  }
+  .screen-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 480px;
+    margin: 24px auto 32px;
+  }
+  .stat-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 16px 10px;
+  }
+  .stat-box .stat-val {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--accent);
+    display: block;
+  }
+  .stat-box .stat-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+  .result-grade {
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--accent3);
+    text-shadow: 0 0 30px rgba(57,255,20,0.5);
+    display: block;
+    margin: 10px 0;
+    font-family: var(--font-mono);
+  }
+  .grade-label {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+  .big-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 5px;
+    padding: 14px 40px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .big-btn:hover { background: #fff; transform: scale(1.03); box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+  .big-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--dim);
+    color: var(--dim);
+    margin-left: 12px;
+  }
+  .big-btn.secondary:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.05); }
+
+  /* TOPIC FILTER */
+  .topic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 22px;
+    justify-content: center;
+  }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+
+  /* COUNTDOWN ANIMATION */
+  @keyframes pulse-warn {
+    0%, 100% { color: var(--warn); }
+    50% { color: #ff6600; text-shadow: 0 0 12px #ff6600; }
+  }
+  .timer-pulse { animation: pulse-warn 0.8s infinite; }
+
+  /* GLITCH EFFECT */
+  @keyframes glitch {
+    0%   { clip-path: inset(40% 0 61% 0); transform: translate(-2px, 0); }
+    20%  { clip-path: inset(92% 0 1% 0);  transform: translate(2px, 0); }
+    40%  { clip-path: inset(43% 0 1% 0);  transform: translate(-2px, 0); }
+    60%  { clip-path: inset(25% 0 58% 0); transform: translate(2px, 0); }
+    80%  { clip-path: inset(54% 0 7% 0);  transform: translate(-2px, 0); }
+    100% { clip-path: inset(58% 0 43% 0); transform: translate(2px, 0); }
+  }
+
+  .separator {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  @media (max-width: 500px) {
+    .mission-card { padding: 18px 14px; }
+    .hud { grid-template-columns: 1fr 1fr; }
+    .hud-cell:last-child { grid-column: span 2; }
+    .screen-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-label">▶ Berufliches Gymnasium BW · Physik</div>
+    <h1>EXIT GAME: PRÜFUNGSMISSION</h1>
+    <div class="header-sub">Technisches Gymnasium · Alle Themengebiete · AFB I–III</div>
+  </div>
+  <div id="main"></div>
+</div>
+
+<script>
+// ─── QUESTION BANK ──────────────────────────────────────────────────────────
+const questions = [
+
+  // ── BPE 1: KINEMATIK & DYNAMIK ──────────────────────────────────────────
+
+  {
+    id: 1, topic: "Kinematik & Dynamik", afb: "I",
+    question: "Ein Auto bewegt sich mit konstanter Geschwindigkeit. Welche Aussage beschreibt die Kraft auf das Auto korrekt?",
+    type: "mc",
+    options: [
+      "Es wirkt eine konstante Kraft in Fahrtrichtung.",
+      "Die Gesamtkraft (resultierende Kraft) beträgt null.",
+      "Es wirkt keine Kraft, da keine Beschleunigung vorliegt.",
+      "Die Kraft ist proportional zur Geschwindigkeit."
+    ],
+    correct: 1,
+    explanation: "Nach Newtons 1. Axiom (Trägheitsgesetz) bleibt ein Körper in gleichförmiger Bewegung, wenn die resultierende Kraft null ist. Antriebskraft und Reibungskraft heben sich auf – die Gesamtkraft ist null."
+  },
+
+  {
+    id: 2, topic: "Kinematik & Dynamik", afb: "II",
+    question: "Ein Ball wird horizontal mit v₀ = 15 m/s abgeworfen. Wie weit fliegt er horizontal (x-Richtung), wenn er nach t = 2 s aufkommt?",
+    hint: "Horizontale Bewegung: gleichförmig. Vertikale Bewegung: freier Fall.",
+    type: "mc",
+    options: ["15 m", "20 m", "30 m", "45 m"],
+    correct: 2,
+    explanation: "Horizontaler Wurf: x = v₀ · t = 15 m/s · 2 s = 30 m. Die horizontale Komponente ist unbeschleunigt, da keine Luftreibung angenommen wird."
+  },
+
+  {
+    id: 3, topic: "Kinematik & Dynamik", afb: "II",
+    question: "Zwei Wagen stoßen inelastisch zusammen. Wagen A: m₁ = 4 kg, v₁ = 6 m/s; Wagen B: m₂ = 2 kg, v₂ = 0 m/s. Welche gemeinsame Geschwindigkeit v' haben sie nach dem Stoß?",
+    hint: "Impulserhaltungssatz: m₁·v₁ + m₂·v₂ = (m₁+m₂)·v'",
+    type: "mc",
+    options: ["2 m/s", "3 m/s", "4 m/s", "6 m/s"],
+    correct: 2,
+    explanation: "Impulssatz: m₁·v₁ = (m₁+m₂)·v' → v' = (4·6)/(4+2) = 24/6 = 4 m/s"
+  },
+
+  {
+    id: 4, topic: "Kinematik & Dynamik", afb: "III",
+    question: "Ein Körper der Masse m = 2 kg wird mit der Kraft F = 10 N auf einer reibungsfreien schiefen Ebene (α = 30°) beschleunigt. F wirkt parallel zur Ebene aufwärts. Welche Beschleunigung ergibt sich? (g = 10 m/s²)",
+    hint: "Gleichgewicht der Kräfte entlang der Ebene: F_res = F − m·g·sin(α)",
+    type: "mc",
+    options: ["2,5 m/s²", "5 m/s²", "0 m/s²", "−2,5 m/s²"],
+    correct: 0,
+    explanation: "F_res = F − m·g·sin30° = 10 − 2·10·0,5 = 10 − 10 = 0 N? Nein: F_res = 10 − 2·10·0,5 = 0 → Moment! sin(30°)=0,5: m·g·sin30°=2·10·0,5=10 N. Das wäre a=0. Aber: F=10N, Hangabtrieb=10N → Gleichgewicht? Korrektur: F_res = 10 N − 10 N = 0 N → a = 0 m/s². Tatsächlich ergibt sich hier a = 0 m/s² (Gleichgewicht). Die Aufgabe illustriert, dass Kräfte vektoriell addiert werden müssen.",
+    correct: 2,
+    explanation: "F_res = F − m·g·sin(30°) = 10 N − 2·10·0,5 = 10 − 10 = 0 N → a = 0 m/s². Der Körper bewegt sich (falls schon in Bewegung) gleichförmig: Antriebskraft und Hangabtriebskraft heben sich genau auf."
+  },
+
+  // ── BPE 2: ENERGIE & LEISTUNG ────────────────────────────────────────────
+
+  {
+    id: 5, topic: "Energie & Leistung", afb: "I",
+    question: "Was beschreibt der Wirkungsgrad η einer Maschine?",
+    type: "mc",
+    options: [
+      "Das Verhältnis von zugeführter zu abgegebener Energie: η = E_zu / E_ab",
+      "Das Verhältnis von nutzbarer Energie zu zugeführter Energie: η = E_nutz / E_zu",
+      "Die Differenz aus zugeführter und nutzbarer Energie",
+      "Die Leistung dividiert durch die Zeit"
+    ],
+    correct: 1,
+    explanation: "Der Wirkungsgrad η = E_nutz / E_zu gibt an, welcher Anteil der zugeführten Energie tatsächlich als Nutzenergie zur Verfügung steht. Er ist immer ≤ 1 (≤ 100 %)."
+  },
+
+  {
+    id: 6, topic: "Energie & Leistung", afb: "II",
+    question: "Ein Pumpspeicherkraftwerk hebt Wasser der Masse m = 5·10⁶ kg um h = 400 m. Wie viel potenzielle Energie E_pot wird gespeichert? (g = 10 m/s²)",
+    hint: "E_pot = m · g · h",
+    type: "mc",
+    options: ["2·10⁹ J", "2·10¹⁰ J", "5·10⁸ J", "4·10⁷ J"],
+    correct: 1,
+    explanation: "E_pot = m·g·h = 5·10⁶ kg · 10 m/s² · 400 m = 2·10¹⁰ J = 20 GJ"
+  },
+
+  {
+    id: 7, topic: "Energie & Leistung", afb: "II",
+    question: "Ein Motor hat eine Nennleistung von P = 3 kW und einen Wirkungsgrad von η = 0,75. Wie groß ist die Nutzleistung P_nutz?",
+    hint: "η = P_nutz / P_zu",
+    type: "mc",
+    options: ["0,75 kW", "2,25 kW", "3,75 kW", "4 kW"],
+    correct: 1,
+    explanation: "P_nutz = η · P_zu = 0,75 · 3 kW = 2,25 kW"
+  },
+
+  {
+    id: 8, topic: "Energie & Leistung", afb: "III",
+    question: "Warum ist ein Perpetuum mobile 1. Art physikalisch unmöglich? Welche Aussage ist korrekt?",
+    type: "mc",
+    options: [
+      "Es wäre zu teuer herzustellen.",
+      "Es würde gegen den Energieerhaltungssatz verstoßen: Es kann keine Energie aus dem Nichts erzeugt werden.",
+      "Es fehlt die geeignete Technologie.",
+      "Es würde gegen Newtons 3. Axiom verstoßen."
+    ],
+    correct: 1,
+    explanation: "Ein Perpetuum mobile 1. Art würde dauerhaft Energie erzeugen oder mehr Energie abgeben als zugeführt wird. Das widerspricht dem Energieerhaltungssatz: In einem abgeschlossenen System bleibt die Gesamtenergie konstant."
+  },
+
+  // ── BPE 3: MODERNE PHYSIK ─────────────────────────────────────────────────
+
+  {
+    id: 9, topic: "Moderne Physik", afb: "I",
+    question: "Was beschreibt die Energie-Masse-Äquivalenz nach Einstein?",
+    type: "mc",
+    options: [
+      "Energie kann nur in Wärme umgewandelt werden.",
+      "Masse und Energie sind äquivalent: E = m·c²",
+      "Licht hat eine unendlich große Energie.",
+      "Die Geschwindigkeit von Licht ist vom Beobachter abhängig."
+    ],
+    correct: 1,
+    explanation: "E = m·c² besagt, dass Masse und Energie äquivalente Erscheinungsformen sind. Mit c = 3·10⁸ m/s ist selbst kleine Masse äquivalent zu enormen Energiemengen (z. B. in Kernreaktoren oder der Sonne)."
+  },
+
+  {
+    id: 10, topic: "Moderne Physik", afb: "II",
+    question: "Myonen entstehen in der Atmosphäre ca. 10 km über der Erde und haben eine Lebensdauer von ca. 2,2 µs. Mit v ≈ 0,99·c könnten sie klassisch nur ca. 650 m zurücklegen. Warum erreichen viele trotzdem den Boden?",
+    type: "mc",
+    options: [
+      "Myonen sind sehr klein und dringen durch Materie.",
+      "Durch die Zeitdilatation verläuft die Zeit für das schnelle Myon langsamer – aus Sicht der Erde lebt es länger.",
+      "Die Atmosphäre ist für Myonen kein Hindernis.",
+      "Die Erdanziehung beschleunigt Myonen zusätzlich."
+    ],
+    correct: 1,
+    explanation: "Zeitdilatation: Bewegte Uhren gehen langsamer. Für das Myon vergeht Zeit langsamer als für einen ruhenden Beobachter auf der Erde. Dadurch ist seine effektive Lebensdauer (aus Erdsicht) deutlich verlängert – ein direkter Beleg für die Spezielle Relativitätstheorie."
+  },
+
+  // ── BPE 4: MAGNETISCHES FELD ─────────────────────────────────────────────
+
+  {
+    id: 11, topic: "Magnetisches Feld", afb: "I",
+    question: "Welche Größe beschreibt die Stärke eines Magnetfeldes und wird mit B bezeichnet?",
+    type: "mc",
+    options: [
+      "Magnetische Feldstärke H in A/m",
+      "Magnetische Flussdichte B in Tesla (T)",
+      "Magnetischer Fluss Φ in Weber (Wb)",
+      "Permeabilität μ in H/m"
+    ],
+    correct: 1,
+    explanation: "Die magnetische Flussdichte B (in Tesla, T) beschreibt die Stärke und Richtung eines Magnetfeldes. Sie ist die zentrale feldbestimmende Größe und tritt in der Definitionsgleichung F = I·l·B auf."
+  },
+
+  {
+    id: 12, topic: "Magnetisches Feld", afb: "II",
+    question: "Ein gerader Leiter der Länge l = 0,5 m trägt den Strom I = 4 A und steht senkrecht in einem homogenen Magnetfeld B = 0,3 T. Wie groß ist die Lorentzkraft auf den Leiter?",
+    hint: "F = I · l · B (bei senkrechter Ausrichtung zum Feld)",
+    type: "mc",
+    options: ["0,3 N", "0,6 N", "1,2 N", "2,4 N"],
+    correct: 1,
+    explanation: "F = I · l · B = 4 A · 0,5 m · 0,3 T = 0,6 N"
+  },
+
+  // ── BPE 5: ELEKTRISCHES FELD ─────────────────────────────────────────────
+
+  {
+    id: 13, topic: "Elektrisches Feld", afb: "I",
+    question: "Zwischen den Platten eines Plattenkondensators herrscht ein homogenes elektrisches Feld. Was gilt für die Feldlinien?",
+    type: "mc",
+    options: [
+      "Sie verlaufen parallel von der negativen zur positiven Platte.",
+      "Sie verlaufen parallel von der positiven zur negativen Platte.",
+      "Sie verlaufen gebogen zwischen den Platten.",
+      "Sie verlaufen senkrecht zu den Platten, aber unregelmäßig verteilt."
+    ],
+    correct: 1,
+    explanation: "Elektrische Feldlinien verlaufen definitionsgemäß von der positiven zur negativen Ladung. Im homogenen Feld des Plattenkondensators sind sie parallel und gleichmäßig verteilt."
+  },
+
+  {
+    id: 14, topic: "Elektrisches Feld", afb: "II",
+    question: "Ein Plattenkondensator hat die Plattenabstand d = 5 mm und eine anliegende Spannung U = 100 V. Wie groß ist die elektrische Feldstärke E zwischen den Platten?",
+    hint: "E = U / d",
+    type: "mc",
+    options: ["500 V/m", "2000 V/m", "20 000 V/m", "50 000 V/m"],
+    correct: 2,
+    explanation: "E = U / d = 100 V / 0,005 m = 20 000 V/m = 20 kV/m"
+  },
+
+  {
+    id: 15, topic: "Elektrisches Feld", afb: "III",
+    question: "Welchen Einfluss hat ein Dielektrikum (Isolierstoff) zwischen den Platten auf die Kapazität C eines geladenen, vom Netz getrennten Kondensators?",
+    type: "mc",
+    options: [
+      "C nimmt ab, weil das Dielektrikum die Feldlinien behindert.",
+      "C bleibt gleich, da der Plattenabstand unverändert ist.",
+      "C erhöht sich, weil das Dielektrikum polarisiert wird und das E-Feld abschwächt.",
+      "C nimmt ab, weil die Spannung steigt."
+    ],
+    correct: 2,
+    explanation: "Das Dielektrikum wird durch das E-Feld polarisiert. Die entstehenden Dipolmomente schwächen das externe Feld ab (Gegenfeld). Da Q konstant (Kondensator getrennt), sinkt U → C = Q/U steigt. Es gilt C = ε_r · ε₀ · A/d mit ε_r > 1."
+  },
+
+  // ── BPE 6: GRAVITATIONSFELD ──────────────────────────────────────────────
+
+  {
+    id: 16, topic: "Gravitationsfeld", afb: "II",
+    question: "Die Erde hat die Masse M = 6·10²⁴ kg. In welchem Abstand r vom Erdmittelpunkt beträgt die Gravitationsfeldstärke g = 2,5 m/s²? (G = 6,67·10⁻¹¹ N·m²/kg²)",
+    hint: "g = G·M / r²  →  r = √(G·M / g)",
+    type: "mc",
+    options: ["≈ 5 000 km", "≈ 8 000 km", "≈ 12 700 km", "≈ 40 000 km"],
+    correct: 2,
+    explanation: "r = √(G·M/g) = √(6,67·10⁻¹¹ · 6·10²⁴ / 2,5) = √(1,6·10¹⁴) ≈ 1,27·10⁷ m ≈ 12 700 km. Das ist etwa der doppelte Erdradius."
+  },
+
+  // ── BPE 7: TEILCHEN IN FELDERN ───────────────────────────────────────────
+
+  {
+    id: 17, topic: "Teilchen in Feldern", afb: "II",
+    question: "Ein Elektron (Ladung e = 1,6·10⁻¹⁹ C, Masse m = 9,1·10⁻³¹ kg) wird durch eine Spannung U = 1000 V beschleunigt. Welche kinetische Energie E_kin erhält es?",
+    hint: "E_kin = e · U",
+    type: "mc",
+    options: [
+      "1,6·10⁻¹⁶ J",
+      "9,1·10⁻²⁸ J",
+      "1,6·10⁻¹⁹ J",
+      "1000 J"
+    ],
+    correct: 0,
+    explanation: "E_kin = e · U = 1,6·10⁻¹⁹ C · 1000 V = 1,6·10⁻¹⁶ J. Die gesamte elektrische Energie wird in kinetische Energie umgewandelt."
+  },
+
+  {
+    id: 18, topic: "Teilchen in Feldern", afb: "III",
+    question: "Ein Elektron bewegt sich senkrecht in ein homogenes Magnetfeld B = 0,02 T und beschreibt einen Kreis. Warum ist die Geschwindigkeit des Elektrons dabei konstant?",
+    type: "mc",
+    options: [
+      "Weil das Magnetfeld das Elektron abbremst und beschleunigt abwechselnd.",
+      "Weil die Lorentzkraft stets senkrecht zur Geschwindigkeit steht und keine Arbeit verrichtet.",
+      "Weil das Magnetfeld eine konstante Kraft in Bewegungsrichtung ausübt.",
+      "Weil das Elektron in einem konservativen Feld keine Energie verliert."
+    ],
+    correct: 1,
+    explanation: "Die magnetische Lorentzkraft F = q·v×B steht immer senkrecht zur Geschwindigkeit. Eine senkrecht zur Bewegung wirkende Kraft verrichtet keine Arbeit (W = F·s·cos90° = 0). Daher bleibt |v| konstant – es handelt sich um eine gleichförmige Kreisbewegung."
+  },
+
+  // ── BPE 8: ELEKTROMAGNETISCHE INDUKTION ─────────────────────────────────
+
+  {
+    id: 19, topic: "Elektromagnetische Induktion", afb: "I",
+    question: "Welche der folgenden Methoden erzeugt KEINE Induktionsspannung in einer Spule?",
+    type: "mc",
+    options: [
+      "Bewegung eines Magneten in der Spule",
+      "Änderung des Stromes in einer benachbarten Spule",
+      "Anlegen einer Gleichspannung ohne jede Änderung",
+      "Rotation der Spule in einem Magnetfeld"
+    ],
+    correct: 2,
+    explanation: "Induktion tritt nur auf, wenn sich der magnetische Fluss ändert: Φ = B·A·cos(α). Eine konstante Gleichspannung (ohne Änderung) erzeugt ein konstantes Magnetfeld → kein Induktionseffekt in einer anderen Spule."
+  },
+
+  {
+    id: 20, topic: "Elektromagnetische Induktion", afb: "II",
+    question: "Eine Spule mit N = 200 Windungen umschließt einen Fluss, der sich in Δt = 0,01 s von Φ₁ = 0 auf Φ₂ = 5·10⁻³ Wb ändert. Wie groß ist die induzierte Spannung U_ind?",
+    hint: "U_ind = −N · ΔΦ/Δt",
+    type: "mc",
+    options: ["−1 V", "−10 V", "−100 V", "−1000 V"],
+    correct: 2,
+    explanation: "|U_ind| = N · |ΔΦ/Δt| = 200 · (5·10⁻³ / 0,01) = 200 · 0,5 = 100 V"
+  },
+
+  // ── BPE 9: SCHWINGUNGEN ──────────────────────────────────────────────────
+
+  {
+    id: 21, topic: "Schwingungen", afb: "I",
+    question: "Was ist die Periodendauer T einer harmonischen Schwingung?",
+    type: "mc",
+    options: [
+      "Die Zeit für eine halbe Schwingung.",
+      "Die Zeit für eine vollständige Schwingung.",
+      "Die maximale Auslenkung vom Ruhepunkt.",
+      "Die Anzahl der Schwingungen pro Sekunde."
+    ],
+    correct: 1,
+    explanation: "Die Periodendauer T ist die Zeit für eine vollständige Schwingung (Hin- und Rückbewegung). Sie ist der Kehrwert der Frequenz: T = 1/f. Die Einheit ist Sekunde (s)."
+  },
+
+  {
+    id: 22, topic: "Schwingungen", afb: "II",
+    question: "Ein Federpendel mit Federkonstante D = 50 N/m und Masse m = 0,5 kg schwingt. Berechne die Eigenfrequenz f₀.",
+    hint: "f₀ = (1/2π) · √(D/m)",
+    type: "mc",
+    options: ["≈ 0,5 Hz", "≈ 1,6 Hz", "≈ 5 Hz", "≈ 10 Hz"],
+    correct: 1,
+    explanation: "f₀ = (1/2π) · √(D/m) = (1/2π) · √(50/0,5) = (1/2π) · √100 = 10/2π ≈ 1,59 Hz"
+  },
+
+  {
+    id: 23, topic: "Schwingungen", afb: "III",
+    question: "Welche Analogie besteht zwischen einem mechanischen Federpendel und einem elektromagnetischen Schwingkreis (LC-Kreis)?",
+    type: "mc",
+    options: [
+      "Masse m ↔ Widerstand R; Federkonstante D ↔ Kapazität C",
+      "Masse m ↔ Induktivität L; Federkonstante D ↔ 1/C (reziprokes der Kapazität)",
+      "Auslenkung x ↔ Stromstärke I; Geschwindigkeit v ↔ Spannung U",
+      "B und C sind beide richtig."
+    ],
+    correct: 1,
+    explanation: "Die Analogie lautet: Masse m ↔ Induktivität L (beide speichern kinetische Energie/Magnetfeldenergie), Federkonstante D ↔ 1/C (speichern Spannungsenergie/Lageenergie). Thomson-Formel: T = 2π·√(L·C) analog zu T = 2π·√(m/D)."
+  },
+
+  // ── BPE 10: WELLEN ──────────────────────────────────────────────────────
+
+  {
+    id: 24, topic: "Wellen", afb: "I",
+    question: "Welche Beziehung gilt zwischen Frequenz f, Wellenlänge λ und Ausbreitungsgeschwindigkeit c einer Welle?",
+    type: "mc",
+    options: ["c = f / λ", "c = f · λ", "f = c · λ", "λ = c · f"],
+    correct: 1,
+    explanation: "Die Grundbeziehung lautet c = f · λ. Ausbreitungsgeschwindigkeit = Frequenz × Wellenlänge. Umgestellt: λ = c/f oder f = c/λ."
+  },
+
+  {
+    id: 25, topic: "Wellen", afb: "II",
+    question: "Rotes Licht hat eine Wellenlänge von λ = 650 nm. Welche Frequenz f hat dieses Licht? (c = 3·10⁸ m/s)",
+    hint: "f = c / λ, mit λ in Metern",
+    type: "mc",
+    options: ["≈ 4,6·10¹⁴ Hz", "≈ 5,0·10¹⁴ Hz", "≈ 2,0·10¹⁵ Hz", "≈ 3,0·10⁸ Hz"],
+    correct: 0,
+    explanation: "f = c/λ = (3·10⁸ m/s) / (650·10⁻⁹ m) = 3·10⁸ / 6,5·10⁻⁷ ≈ 4,6·10¹⁴ Hz"
+  },
+
+  {
+    id: 26, topic: "Wellen", afb: "III",
+    question: "Beim Doppelspaltversuch mit Licht (λ = 500 nm, Spaltabstand g = 0,2 mm) beobachtet man Interferenzstreifen. Wo liegt das erste Minimum (1. Dunkelstreifen) auf einem Schirm in Abstand L = 1 m?",
+    hint: "Minima: g · sin(θ) = (m+½)·λ, für m=0: y₁ ≈ (0,5·λ·L) / g",
+    type: "mc",
+    options: ["≈ 0,5 mm", "≈ 1,25 mm", "≈ 2,5 mm", "≈ 5 mm"],
+    correct: 1,
+    explanation: "y₁ = (0,5·λ·L)/g = (0,5 · 500·10⁻⁹ · 1) / (0,2·10⁻³) = 2,5·10⁻⁴ / 2·10⁻⁴ = 1,25·10⁻³ m = 1,25 mm"
+  },
+
+  // ── BPE 11: QUANTENPHYSIK ─────────────────────────────────────────────────
+
+  {
+    id: 27, topic: "Quantenphysik", afb: "I",
+    question: "Was zeigt der äußere Photoeffekt über die Natur des Lichts?",
+    type: "mc",
+    options: [
+      "Licht ist immer eine Welle, die Elektronen herausschleudert.",
+      "Licht besteht aus Energiepaketen (Photonen), deren Energie E = h·f beträgt.",
+      "Licht kann nur bei Metallen Elektronen auslösen, wenn es hell genug ist.",
+      "Die Wellenlänge des Lichts bestimmt die Anzahl der Elektronen, die Frequenz ihre Energie."
+    ],
+    correct: 1,
+    explanation: "Der Photoeffekt zeigt: Nicht die Intensität, sondern die Frequenz des Lichts bestimmt, ob Elektronen ausgelöst werden (und ihre Energie). Einstein erklärte dies durch Lichtquanten (Photonen) mit E = h·f (Planck'sche Konstante h = 6,63·10⁻³⁴ J·s)."
+  },
+
+  {
+    id: 28, topic: "Quantenphysik", afb: "II",
+    question: "Ein Photon hat die Energie E = 3,3·10⁻¹⁹ J. Welcher Frequenz f entspricht das? (h = 6,63·10⁻³⁴ J·s)",
+    hint: "E = h · f  →  f = E / h",
+    type: "mc",
+    options: [
+      "≈ 2·10¹⁴ Hz (Infrarot)",
+      "≈ 5·10¹⁴ Hz (sichtbares Licht)",
+      "≈ 8·10¹⁵ Hz (UV)",
+      "≈ 3·10⁸ Hz (Radio)"
+    ],
+    correct: 1,
+    explanation: "f = E/h = (3,3·10⁻¹⁹) / (6,63·10⁻³⁴) ≈ 5·10¹⁴ Hz → sichtbares Licht (grün-blauer Bereich)"
+  },
+
+  {
+    id: 29, topic: "Quantenphysik", afb: "III",
+    question: "Was bedeutet es für das physikalische Weltbild, dass Elektronen am Doppelspalt Interferenzmuster erzeugen, auch wenn sie einzeln hindurchgeschickt werden?",
+    type: "mc",
+    options: [
+      "Elektronen sind in Wirklichkeit nur Wellen, kein Teilchen.",
+      "Der Doppelspaltversuch zeigt einen Messfehler; Elektronen müssen durch einen Spalt gehen.",
+      "Elektronen sind Quantenobjekte mit Wellen-Teilchen-Dualismus: Ihr Auftreffpunkt ist nicht kausal bestimmbar, sondern nur statistisch beschreibbar.",
+      "Das Interferenzmuster entsteht durch gegenseitige Abstoßung der Elektronen."
+    ],
+    correct: 2,
+    explanation: "Das Interferenzmuster einzelner Elektronen zeigt: Quantenobjekte besitzen keinen definierten Ort (Nichtlokalität), ihr Verhalten ist nicht kausal determiniert (Nichtdeterminiertheit) – man kann nur Wahrscheinlichkeiten angeben. Die de-Broglie-Wellenlänge λ = h/p beschreibt die Materiewelle. Dies widerspricht dem klassischen Weltbild fundamental."
+  },
+
+  {
+    id: 30, topic: "Quantenphysik", afb: "II",
+    question: "Im Franck-Hertz-Versuch werden Elektronen durch Hg-Dampf beschleunigt. In regelmäßigen Abständen ΔU ≈ 4,9 V bricht der Strom ein. Was beweist das?",
+    type: "mc",
+    options: [
+      "Hg-Atome haben eine Ionisierungsenergie von 4,9 eV.",
+      "Die Elektronen übertragen in diskreten Schritten genau 4,9 eV an Hg-Atome → Energieniveaus sind quantisiert.",
+      "Bei 4,9 V werden die Elektronen zu schnell und überspringen die Atome.",
+      "Die Spannung 4,9 V ist der Schwellenwert für den Photoeffekt in Hg."
+    ],
+    correct: 1,
+    explanation: "Der Franck-Hertz-Versuch zeigt: Elektronen können Energie nur in diskreten Portionen (4,9 eV) an Hg-Atome abgeben → die Energieniveaus der Atome sind quantisiert. Dies bestätigt das quantenphysikalische Atommodell mit diskreten Elektronenzuständen."
+  }
+];
+
+
+// ─── SHUFFLE ─────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const TOTAL_QUESTIONS = 10;
+let gameQuestions = [];
+let currentIdx = 0;
+let score = 0;
+let answered = false;
+let timerInterval = null;
+let timeLeft = 0;
+let totalTimeUsed = 0;
+const TIME_PER_Q = 90; // seconds per question
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+const main = document.getElementById('main');
+
+function render(html) { main.innerHTML = html; }
+
+function showIntro() {
+  render(`
+    <div class="screen">
+      <span class="screen-icon">🔐</span>
+      <h2>PHYSIK – PRÜFUNGSMISSION</h2>
+      <p>Du hast ${TOTAL_QUESTIONS} Aufgaben zu lösen – aus allen Themengebieten des TG-Lehrplans Baden-Württemberg. Alle Anforderungsbereiche (AFB I–III) sind vertreten.<br><br>
+      Pro Frage hast du <strong style="color:var(--accent)">90 Sekunden</strong> Zeit. Lies die Aufgaben sorgfältig!<br><br>
+      Viel Erfolg – du schaffst das! 💪</p>
+      <button class="big-btn" onclick="startGame()">▶ MISSION STARTEN</button>
+    </div>
+  `);
+}
+
+function startGame() {
+  gameQuestions = shuffle([...questions]).slice(0, TOTAL_QUESTIONS);
+  currentIdx = 0;
+  score = 0;
+  totalTimeUsed = 0;
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  const q = gameQuestions[currentIdx];
+  const progress = Math.round((currentIdx / TOTAL_QUESTIONS) * 100);
+
+  const stagesDots = gameQuestions.map((_, i) => {
+    let cls = i < currentIdx ? 'done' : i === currentIdx ? 'active' : '';
+    return `<div class="stage-dot ${cls}"></div>`;
+  }).join('');
+
+  const afbCls = `afb-${q.afb}`;
+
+  let answerHTML = '';
+  if (q.type === 'mc') {
+    answerHTML = `<div class="options" id="options">
+      ${q.options.map((opt, i) => `
+        <button class="option-btn" id="opt-${i}" onclick="checkAnswer(${i})">
+          <span class="option-letter">${String.fromCharCode(65+i)}</span>
+          <span>${opt}</span>
+        </button>
+      `).join('')}
+    </div>`;
+  }
+
+  const hintHTML = q.hint ? `<div class="question-hint">💡 Hinweis: ${q.hint}</div>` : '';
+  const formulaHTML = q.formula ? `<div class="formula">${q.formula}</div>` : '';
+
+  render(`
+    <div class="hud">
+      <div class="hud-cell">
+        <span class="hud-label">Aufgabe</span>
+        <span class="hud-value">${currentIdx + 1} / ${TOTAL_QUESTIONS}</span>
+      </div>
+      <div class="hud-cell timer-cell">
+        <span class="hud-label">Zeit</span>
+        <span class="hud-value" id="timer-display">90</span>
+      </div>
+      <div class="hud-cell score-cell">
+        <span class="hud-label">Punkte</span>
+        <span class="hud-value">${score}</span>
+      </div>
+    </div>
+
+    <div class="stages">${stagesDots}</div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" style="width: ${progress}%"></div>
+    </div>
+
+    <div class="mission-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <div class="mission-tag">📡 ${q.topic}</div>
+        <span class="afb-badge ${afbCls}">AFB ${q.afb}</span>
+      </div>
+      <div class="question-text">${q.question}</div>
+      ${formulaHTML}
+      ${hintHTML}
+      ${answerHTML}
+      <div class="feedback" id="feedback"></div>
+      <div class="nav-wrap">
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">
+          ${currentIdx < TOTAL_QUESTIONS - 1 ? 'WEITER →' : 'AUSWERTUNG →'}
+        </button>
+      </div>
+    </div>
+  `);
+
+  startTimer();
+}
+
+function startTimer() {
+  timeLeft = TIME_PER_Q;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    totalTimeUsed++;
+    updateTimerDisplay();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (!answered) {
+        timeUp();
+      }
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer-display');
+  if (!el) return;
+  el.textContent = timeLeft;
+  if (timeLeft <= 15) {
+    el.classList.add('timer-pulse');
+  } else {
+    el.classList.remove('timer-pulse');
+  }
+}
+
+function timeUp() {
+  answered = true;
+  const q = gameQuestions[currentIdx];
+  // disable all
+  document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+  // highlight correct
+  const correctBtn = document.getElementById(`opt-${q.correct}`);
+  if (correctBtn) correctBtn.classList.add('correct');
+  // show feedback
+  showFeedback(false, `⏱ Zeit abgelaufen! Die richtige Antwort war: <strong>${q.options[q.correct]}</strong><br><br>${q.explanation}`);
+  showNextBtn();
+}
+
+function checkAnswer(selected) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  totalTimeUsed += (TIME_PER_Q - timeLeft);
+
+  const q = gameQuestions[currentIdx];
+  const isCorrect = selected === q.correct;
+
+  document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+
+  const selectedBtn = document.getElementById(`opt-${selected}`);
+  const correctBtn  = document.getElementById(`opt-${q.correct}`);
+
+  if (isCorrect) {
+    selectedBtn.classList.add('correct');
+    score++;
+    showFeedback(true, `✅ Richtig! ${q.explanation}`);
+  } else {
+    selectedBtn.classList.add('wrong');
+    correctBtn.classList.add('correct');
+    showFeedback(false, `❌ Leider falsch. Die richtige Antwort war: <strong>${q.options[q.correct]}</strong><br><br>${q.explanation}`);
+  }
+
+  showNextBtn();
+}
+
+function showFeedback(correct, html) {
+  const fb = document.getElementById('feedback');
+  fb.innerHTML = html;
+  fb.className = `feedback show ${correct ? 'correct' : 'wrong'}`;
+}
+
+function showNextBtn() {
+  const btn = document.getElementById('next-btn');
+  if (btn) btn.classList.add('show');
+}
+
+function nextQuestion() {
+  clearInterval(timerInterval);
+  currentIdx++;
+  if (currentIdx >= TOTAL_QUESTIONS) {
+    showResults();
+  } else {
+    showQuestion();
+  }
+}
+
+function showResults() {
+  const pct = Math.round((score / TOTAL_QUESTIONS) * 100);
+  const avgTime = Math.round(totalTimeUsed / TOTAL_QUESTIONS);
+
+  let grade, gradeColor, emoji, msg;
+  if (pct >= 90) {
+    grade = '1'; gradeColor = 'var(--accent3)'; emoji = '🏆';
+    msg = 'Hervorragend! Prüfungsreif auf höchstem Niveau.';
+  } else if (pct >= 75) {
+    grade = '2'; gradeColor = '#00d4ff'; emoji = '⭐';
+    msg = 'Sehr gut! Du beherrschst die Physik souverän.';
+  } else if (pct >= 60) {
+    
+    msg = 'Gut! Noch ein paar Lücken – gezielt wiederholen!';
+    gradeColor = 'var(--warn)';
+    msg = 'Gut! Noch ein paar Lücken – gezielt nacharbeiten.';
+  } else if (pct >= 45) {
+    grade = '4'; gradeColor = '#ff8c00'; emoji = '📚';
+    msg = 'Ausreichend. Die Grundlagen sind vorhanden – intensiv üben!';
+  } else {
+    grade = '5'; gradeColor = 'var(--wrong)'; emoji = '💪';
+    msg = 'Nicht bestanden – aber jeder Rückschlag ist eine Lernchance!';
+  }
+
+  render(`
+    <div class="screen">
+      <span class="screen-icon">${emoji}</span>
+      <h2>MISSION ABGESCHLOSSEN</h2>
+      <div class="screen-stats">
+        <div class="stat-box">
+          <span class="stat-val" style="color: ${gradeColor}">${score}/${TOTAL_QUESTIONS}</span>
+          <span class="stat-label">Richtig</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val" style="color: var(--accent)">${pct}%</span>
+          <span class="stat-label">Quote</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val" style="color: var(--dim)">${avgTime}s</span>
+          <span class="stat-label">Ø Zeit/Frage</span>
+        </div>
+      </div>
+      <div class="grade-label">TENDENZ-NOTE</div>
+      <span class="result-grade" style="color:${gradeColor}">${grade}</span>
+      <p>${msg}</p>
+      <div style="margin-top: 8px;">
+        <button class="big-btn" onclick="startGame()">🔄 NEUES SPIEL</button>
+        <button class="big-btn secondary" onclick="showIntro()">← ZURÜCK</button>
+      </div>
+    </div>
+  `);
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+showIntro();
+</script>
+</body>
+</html>
