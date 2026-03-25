@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Game – Reihen- und Parallelschaltung</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700;900&display=swap');
+
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --accent: #a78bfa;
+    --accent2: #7c3aed;
+    --success: #34d399;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --border: rgba(167,139,250,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── grid bg ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(167,139,250,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(167,139,250,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* ── Header ── */
+  .game-header {
+    text-align: center;
+    padding: 48px 0 36px;
+  }
+  .game-tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(167,139,250,.1);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 5px 14px;
+    margin-bottom: 20px;
+  }
+  .game-title {
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #f1f5f9 30%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .game-subtitle {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto 28px;
+  }
+
+  /* ── HUD ── */
+  .hud {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .hud-pill {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .hud-pill span.label { color: var(--muted); }
+  .hud-pill span.val { color: var(--accent); font-weight: 700; }
+  .heart { color: var(--danger); }
+
+  /* ── Progress bar ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 99px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    animation: fadeUp .35s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(18px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .puzzle-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .puzzle-q {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  /* circuit diagram */
+  .circuit-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 18px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: #c4b5fd;
+    text-align: center;
+    line-height: 1.9;
+    white-space: pre;
+  }
+
+  /* choices */
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media(max-width:480px){ .choices { grid-template-columns: 1fr; } }
+
+  .choice-btn {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .2s, background .2s, transform .1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .choice-btn:hover { border-color: var(--accent); background: rgba(167,139,250,.08); transform: translateY(-1px); }
+  .choice-btn.correct { border-color: var(--success); background: rgba(52,211,153,.12); }
+  .choice-btn.wrong   { border-color: var(--danger);  background: rgba(248,113,113,.12); }
+  .choice-btn:disabled { cursor: default; transform: none; }
+
+  /* input row */
+  .input-row {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .num-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .num-input:focus { border-color: var(--accent); }
+  .num-input::placeholder { color: var(--muted); }
+  .num-input.correct { border-color: var(--success); }
+  .num-input.wrong   { border-color: var(--danger); }
+
+  .submit-btn {
+    background: var(--accent2);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    white-space: nowrap;
+  }
+  .submit-btn:hover { background: var(--accent); transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+
+  /* feedback */
+  .feedback {
+    margin-top: 14px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    padding: 12px 16px;
+    border-radius: 10px;
+    display: none;
+  }
+  .feedback.show { display: block; animation: fadeUp .25s ease both; }
+  .feedback.ok  { background: rgba(52,211,153,.1);  border: 1px solid rgba(52,211,153,.25); color: #86efac; }
+  .feedback.err { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.25); color: #fca5a5; }
+
+  .next-btn {
+    margin-top: 14px;
+    display: none;
+    width: 100%;
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 10px;
+    padding: 11px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  .next-btn:hover { background: var(--accent); color: #fff; }
+  .next-btn.show { display: block; animation: fadeUp .25s ease .1s both; }
+
+  /* code display */
+  .code-digit {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    width: 52px; height: 60px;
+    line-height: 60px;
+    text-align: center;
+    margin: 0 4px;
+    transition: all .3s;
+  }
+  .code-digit.revealed {
+    color: var(--success);
+    border-color: var(--success);
+    box-shadow: 0 0 16px rgba(52,211,153,.25);
+  }
+
+  /* ── Win/Lose screens ── */
+  .screen {
+    display: none;
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .screen.show { display: block; animation: fadeUp .4s ease both; }
+
+  .screen-emoji { font-size: 4rem; margin-bottom: 20px; }
+  .screen-title {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #f1f5f9, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .screen-sub { color: var(--muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 28px; }
+
+  .restart-btn {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 36px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity .2s, transform .15s;
+  }
+  .restart-btn:hover { opacity: .88; transform: translateY(-2px); }
+
+  /* lives */
+  .lives-display { font-size: 1.4rem; letter-spacing: 4px; margin-bottom: 10px; }
+  .life { transition: all .3s; }
+  .life.lost { filter: grayscale(1); opacity: .3; }
+
+  /* formula box */
+  .formula-box {
+    background: rgba(167,139,250,.07);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: #c4b5fd;
+    margin-bottom: 16px;
+    line-height: 1.7;
+  }
+
+  .tag-row { margin-bottom: 8px; }
+  .tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    background: rgba(167,139,250,.12);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 2px 10px;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="game-header" id="header">
+    <div class="game-tag">⚡ Elektrizitätslehre · Exit Game</div>
+    <h1 class="game-title">Reihen- &amp; Parallelschaltung</h1>
+    <p class="game-subtitle">Der Schaltplan liegt offen – du hast 3 Leben. Löse alle 5 Rätsel und knacke den Zugangscode!</p>
+    <div class="hud">
+      <div class="hud-pill"><span class="label">Rätsel</span><span class="val" id="hud-puzzle">1 / 5</span></div>
+      <div class="hud-pill"><span class="heart">❤️</span><span class="val" id="hud-lives">3</span></div>
+      <div class="hud-pill"><span class="label">Code</span><span class="val" id="hud-code">?????</span></div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+  <!-- PUZZLE AREA -->
+  <div id="puzzle-area"></div>
+
+  <!-- Win Screen -->
+  <div class="screen" id="win-screen">
+    <div class="screen-emoji">🎉</div>
+    <h2 class="screen-title">Schaltkreis geknackt!</h2>
+    <p class="screen-sub">Du hast alle 5 Rätsel gelöst und den Zugangscode freigeschaltet.<br>Ausgezeichnetes Verständnis der Schaltkreise!</p>
+    <div style="margin-bottom:24px">
+      <span class="code-digit revealed" id="c0">?</span>
+      <span class="code-digit revealed" id="c1">?</span>
+      <span class="code-digit revealed" id="c2">?</span>
+      <span class="code-digit revealed" id="c3">?</span>
+      <span class="code-digit revealed" id="c4">?</span>
+    </div>
+    <button class="restart-btn" onclick="restart()">🔄 Nochmal spielen</button>
+  </div>
+
+  <!-- Lose Screen -->
+  <div class="screen" id="lose-screen">
+    <div class="screen-emoji">💀</div>
+    <h2 class="screen-title">Kurzschluss!</h2>
+    <p class="screen-sub">Du hast alle 3 Leben verloren.<br>Wiederhol die Formeln und versuch es nochmal!</p>
+    <div class="formula-box" style="text-align:left;max-width:400px;margin:0 auto 24px">
+      <strong>Reihenschaltung:</strong><br>
+      R_ges = R₁ + R₂ + … | U_ges = U₁ + U₂ | I = gleich<br><br>
+      <strong>Parallelschaltung:</strong><br>
+      1/R_ges = 1/R₁ + 1/R₂ | I_ges = I₁ + I₂ | U = gleich
+    </div>
+    <button class="restart-btn" onclick="restart()">🔄 Nochmal spielen</button>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const CODE = ['4','7','2','9','5'];
+
+const PUZZLES = [
+  {
+    id: 0,
+    type: 'choice',
+    tag: ['Reihenschaltung', 'Grundbegriffe'],
+    question: 'Zwei Widerstände R₁ = 30 Ω und R₂ = 20 Ω sind in Reihe geschaltet. Welcher Gesamtwiderstand ergibt sich?',
+    circuit: `
+  ──[R₁=30Ω]──[R₂=20Ω]──
+  `,
+    choices: ['10 Ω', '50 Ω', '600 Ω', '25 Ω'],
+    correct: 1,
+    explanation: 'Bei der Reihenschaltung addieren sich die Widerstände: R_ges = R₁ + R₂ = 30 Ω + 20 Ω = 50 Ω ✓',
+    codeDigit: CODE[0],
+  },
+  {
+    id: 1,
+    type: 'choice',
+    tag: ['Parallelschaltung', 'Stromstärke'],
+    question: 'In einer Parallelschaltung gilt für die Gesamtstromstärke I_ges:',
+    circuit: `
+        ┌──[R₁]──┐
+  ──────┤        ├──────
+        └──[R₂]──┘
+  `,
+    choices: [
+      'I_ges = I₁ = I₂ (Strom gleich)',
+      'I_ges = I₁ + I₂ (Strom addiert sich)',
+      'I_ges = I₁ · I₂ (Strom multipliziert)',
+      'I_ges = I₁ – I₂ (Strom subtrahiert)',
+    ],
+    correct: 1,
+    explanation: 'Bei der Parallelschaltung teilt sich der Strom auf: I_ges = I₁ + I₂. Die Spannung ist an allen Zweigen gleich. ✓',
+    codeDigit: CODE[1],
+  },
+  {
+    id: 2,
+    type: 'numeric',
+    tag: ['Reihenschaltung', 'Spannung', 'Berechnung'],
+    question: 'An einer Reihenschaltung mit R₁ = 100 Ω und R₂ = 150 Ω liegt eine Gesamtspannung von U = 25 V. Wie groß ist der Strom I (in mA)?',
+    circuit: `
+  U=25V ──[R₁=100Ω]──[R₂=150Ω]── ⏚
+  `,
+    formula: 'R_ges = R₁ + R₂ = 250 Ω   →   I = U / R_ges',
+    answer: 100,
+    tolerance: 1,
+    unit: 'mA',
+    explanation: 'R_ges = 100 + 150 = 250 Ω. I = U/R = 25 V / 250 Ω = 0,1 A = 100 mA ✓',
+    codeDigit: CODE[2],
+  },
+  {
+    id: 3,
+    type: 'numeric',
+    tag: ['Parallelschaltung', 'Widerstand', 'Berechnung'],
+    question: 'Zwei gleiche Widerstände R₁ = R₂ = 60 Ω sind parallel geschaltet. Wie groß ist der Gesamtwiderstand R_ges (in Ω)?',
+    circuit: `
+        ┌──[60Ω]──┐
+  ──────┤         ├──────
+        └──[60Ω]──┘
+  `,
+    formula: '1/R_ges = 1/R₁ + 1/R₂   →   R_ges = (R₁ · R₂) / (R₁ + R₂)',
+    answer: 30,
+    tolerance: 0.5,
+    unit: 'Ω',
+    explanation: 'R_ges = (60 · 60)/(60 + 60) = 3600/120 = 30 Ω. Zwei gleiche Widerstände parallel = halber Wert! ✓',
+    codeDigit: CODE[3],
+  },
+  {
+    id: 4,
+    type: 'choice',
+    tag: ['Gemischte Schaltung', 'Anwendung', 'Vergleich'],
+    question: 'Eine Lampe leuchtet in einer Reihenschaltung mit einer anderen Lampe. Was passiert, wenn die zweite Lampe durchbrennt (Unterbrechung)?',
+    circuit: `
+  ──[💡L₁]──[💡L₂]──
+        ↑ durchgebrannt!
+  `,
+    choices: [
+      'L₁ leuchtet heller als vorher.',
+      'L₁ leuchtet genauso hell weiter.',
+      'L₁ erlischt ebenfalls (kein Strom mehr).',
+      'L₁ leuchtet dunkler, aber noch.',
+    ],
+    correct: 2,
+    explanation: 'In der Reihenschaltung fließt überall derselbe Strom. Unterbricht ein Bauteil, ist der Stromkreis offen → kein Strom → alle Lampen erlöschen. ✓',
+    codeDigit: CODE[4],
+  },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let current = 0;
+let lives = 3;
+let solved = [];
+let locked = false;
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const p = PUZZLES[current];
+  document.getElementById('hud-puzzle').textContent = `${current + 1} / ${PUZZLES.length}`;
+  document.getElementById('hud-lives').textContent = lives;
+  document.getElementById('hud-code').textContent = solved.map((s,i) => s ? CODE[i] : '?').join('');
+  document.getElementById('progress').style.width = `${(solved.filter(Boolean).length / PUZZLES.length) * 100}%`;
+
+  const area = document.getElementById('puzzle-area');
+  area.innerHTML = '';
+
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const tags = p.tag.map(t => `<span class="tag">${t}</span>`).join('');
+  card.innerHTML = `
+    <div class="puzzle-num">Rätsel ${current + 1} von ${PUZZLES.length}</div>
+    <div class="tag-row">${tags}</div>
+    <div class="puzzle-q">${p.question}</div>
+    ${p.circuit ? `<div class="circuit-box">${p.circuit.trim()}</div>` : ''}
+    ${p.formula ? `<div class="formula-box">💡 Formel: ${p.formula}</div>` : ''}
+  `;
+
+  if (p.type === 'choice') {
+    const choiceDiv = document.createElement('div');
+    choiceDiv.className = 'choices';
+    p.choices.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = c;
+      btn.onclick = () => handleChoice(i, btn, p);
+      choiceDiv.appendChild(btn);
+    });
+    card.appendChild(choiceDiv);
+  } else {
+    const row = document.createElement('div');
+    row.className = 'input-row';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.className = 'num-input';
+    inp.id = 'num-input';
+    inp.placeholder = `Antwort in ${p.unit} …`;
+    inp.onkeydown = e => { if(e.key==='Enter') checkNumeric(p); };
+    const sub = document.createElement('button');
+    sub.className = 'submit-btn';
+    sub.textContent = 'Prüfen';
+    sub.onclick = () => checkNumeric(p);
+    row.appendChild(inp);
+    row.appendChild(sub);
+    card.appendChild(row);
+  }
+
+  const fb = document.createElement('div');
+  fb.className = 'feedback';
+  fb.id = 'feedback';
+  card.appendChild(fb);
+
+  const nx = document.createElement('button');
+  nx.className = 'next-btn';
+  nx.id = 'next-btn';
+  nx.textContent = current < PUZZLES.length - 1 ? '→ Weiter zum nächsten Rätsel' : '🏆 Code freischalten!';
+  nx.onclick = () => advance();
+  card.appendChild(nx);
+
+  area.appendChild(card);
+  locked = false;
+}
+
+function handleChoice(idx, btn, p) {
+  if (locked) return;
+  locked = true;
+  const allBtns = document.querySelectorAll('.choice-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  if (idx === p.correct) {
+    btn.classList.add('correct');
+    showFeedback(true, `✅ Richtig! ${p.explanation}`);
+    markSolved(p);
+  } else {
+    btn.classList.add('wrong');
+    allBtns[p.correct].classList.add('correct');
+    loseLife(p.explanation);
+  }
+}
+
+function checkNumeric(p) {
+  if (locked) return;
+  const inp = document.getElementById('num-input');
+  const val = parseFloat(inp.value);
+  if (isNaN(val)) { inp.focus(); return; }
+  locked = true;
+  inp.disabled = true;
+  document.querySelector('.submit-btn').disabled = true;
+
+  if (Math.abs(val - p.answer) <= p.tolerance) {
+    inp.classList.add('correct');
+    showFeedback(true, `✅ Richtig! ${p.explanation}`);
+    markSolved(p);
+  } else {
+    inp.classList.add('wrong');
+    loseLife(`❌ Leider falsch. Richtig wäre: ${p.answer} ${p.unit}. ${p.explanation}`);
+  }
+}
+
+function markSolved(p) {
+  solved[current] = true;
+  document.getElementById('hud-code').textContent = solved.map((s,i) => s ? CODE[i] : '?').join('');
+  document.getElementById('progress').style.width = `${(solved.filter(Boolean).length / PUZZLES.length) * 100}%`;
+  showNext();
+}
+
+function loseLife(msg) {
+  lives--;
+  document.getElementById('hud-lives').textContent = lives;
+  showFeedback(false, `❌ ${msg}`);
+  if (lives <= 0) {
+    setTimeout(() => showLose(), 1600);
+    return;
+  }
+  solved[current] = false;
+  showNext();
+}
+
+function showFeedback(ok, msg) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.className = `feedback ${ok ? 'ok' : 'err'} show`;
+}
+
+function showNext() {
+  const nx = document.getElementById('next-btn');
+  if (nx) nx.classList.add('show');
+}
+
+function advance() {
+  current++;
+  if (current >= PUZZLES.length) {
+    showWin();
+  } else {
+    render();
+  }
+}
+
+function showWin() {
+  document.getElementById('puzzle-area').style.display = 'none';
+  document.getElementById('progress').style.width = '100%';
+  const ws = document.getElementById('win-screen');
+  ws.classList.add('show');
+  CODE.forEach((d, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(`c${i}`);
+      if (el) el.textContent = d;
+    }, i * 200);
+  });
+}
+
+function showLose() {
+  document.getElementById('puzzle-area').style.display = 'none';
+  document.getElementById('lose-screen').classList.add('show');
+}
+
+function restart() {
+  current = 0; lives = 3; solved = []; locked = false;
+  document.getElementById('puzzle-area').style.display = '';
+  document.getElementById('win-screen').classList.remove('show');
+  document.getElementById('lose-screen').classList.remove('show');
+  render();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+solved = new Array(PUZZLES.length).fill(false);
+render();
+</script>
+</body>
+</html>
